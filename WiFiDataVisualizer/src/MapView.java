@@ -53,7 +53,6 @@ public class MapView
          String resource_string = "resources/router120" + i + ".PNG";
          router_resource_path.add((getClass().getResource(resource_string)).getPath());
       }//for
-      //mSqlLiteConnection.connect("jdbc:sqlite:C:/Workspace/Thesis/WiFiDataVisualizer/src/bld2_ap_data.db", "bld2_ap_data");
       String url_to_database = "jdbc:sqlite:" + this.getClass().getResource("").getPath() + "/resources/bld2_ap_data.db";
       mSqlLiteConnection.connect(url_to_database, "bld2_ap_data");
       mMapDisplayPanel = new MapDisplayPanel(mSqlLiteConnection.loadTrainingPointLocations(), mSqlLiteConnection.loadRouterPointLocations(), router_resource_path);
@@ -81,7 +80,6 @@ public class MapView
 
       setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
       setTitle("Wifi Data Visualizer");
-      setMaximumSize(new java.awt.Dimension(1400, 955));
       setResizable(false);
       addWindowListener(new java.awt.event.WindowAdapter()
       {

@@ -6,12 +6,14 @@
 package wifidatavisualizer;
 
 import java.awt.AWTEvent;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
 import java.awt.event.MouseEvent;
+import java.awt.geom.Ellipse2D;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.IOException;
@@ -39,6 +41,9 @@ public class MapDisplayPanel
    private final ArrayList<Image> mRouterImageList;
    private final ArrayList<Rectangle2D> mRouterImageBoundedRectangleList;
    private final ArrayList<Point> mTrainingDataPointList;
+   public boolean mStartPointChosen = false;
+   private Point mCalibrationStartPoint = new Point(500, 500);
+   private Ellipse2D mBoundsCheckOval = null;
 
    public MapDisplayPanel(ArrayList<Point> trainingDataPointList, ArrayList<Point> routerPointList, ArrayList<String> routerResourcePath)
    {
@@ -47,12 +52,7 @@ public class MapDisplayPanel
       mRouterPointList = routerPointList;
       mTrainingDataPointList = trainingDataPointList;
       mRouterImageBoundedRectangleList = new ArrayList<>();
-      /*
-       mRouterPointList.add(new Point(1131, 171));
-       mRouterPointList.add(new Point(445, 232));
-       mRouterPointList.add(new Point(559, 529));
-       mRouterPointList.add(new Point(1076, 520));
-       */
+
       try
       {
          for (String router_resource : routerResourcePath)
@@ -87,7 +87,7 @@ public class MapDisplayPanel
    @Override
    protected void processMouseEvent(MouseEvent mouseEvent, JLayer<? extends JLabel> layer)
    {
-      if (mouseEvent.getID() == MouseEvent.MOUSE_CLICKED && SwingUtilities.isRightMouseButton(mouseEvent))
+      if (mouseEvent.getID() == MouseEvent.MOUSE_CLICKED && SwingUtilities.isRightMouseButton(mouseEvent) && mStartPointChosen == false)
       {
          ArrayList<Point> points = mMapPointsOfInterestList.get(layer);
          if (points == null)
@@ -97,8 +97,12 @@ public class MapDisplayPanel
          }//if
          Point mouse_point = mouseEvent.getPoint();
          mouse_point = SwingUtilities.convertPoint(mouseEvent.getComponent(), mouse_point, layer);
-         JOptionPane.showMessageDialog(null, "X: " + mouse_point.x + " Y: " + mouse_point.y);
-         points.add(mouse_point);
+         int dialog_choice_result = JOptionPane.showConfirmDialog(null, "Choose the following point as the starting calibration point?" + "\nX: " + mouse_point.x + " Y: " + mouse_point.y
+         );
+         if (dialog_choice_result == JOptionPane.YES_OPTION)
+         {
+            mCalibrationStartPoint = mouse_point;
+         }//if
          layer.repaint();
 
       }//if
@@ -116,6 +120,17 @@ public class MapDisplayPanel
          }//for
       }//if
    }//processMouseEvent
+
+   public void addNewWiFiLocalizationPoint(Point wifiLocalizationPoint, JLayer<? extends JLabel> layer)
+   {
+      ArrayList<Point> points = mMapPointsOfInterestList.get(layer);
+      if (points == null)
+      {
+         points = new ArrayList<>();
+      }//if
+      points.add(wifiLocalizationPoint);
+      layer.repaint();
+   }//addNewWiFiLocalizationPoint
 
    @Override
    public void paint(Graphics g, JComponent c)
@@ -135,6 +150,7 @@ public class MapDisplayPanel
       }//if
       paintTrainingData(graphics_2d_utility, c);
       paintRouters(graphics_2d_utility, c);
+      paintCalibrationStartingPoint(graphics_2d_utility, c);
 
       graphics_2d_utility.dispose();
    }//paint
@@ -178,12 +194,23 @@ public class MapDisplayPanel
       if (mTrainingDataPointList != null && mTrainingDataPointList.size() > 0)
       {
          graphics2DUtility.setColor(Color.BLUE);
-         int image_number = 0;
-
          for (Point p : mTrainingDataPointList)
          {
             graphics2DUtility.fillOval(p.x - 8, p.y - 8, 16, 16);
          }//for
       }//if
-   }//paintRouters
+   }//paintTrainingData
+
+   public void paintCalibrationStartingPoint(Graphics2D graphics2DUtility, JComponent mainComponent)
+   {
+      if (this.mCalibrationStartPoint != null)
+      {
+         graphics2DUtility.setColor(Color.ORANGE);
+         graphics2DUtility.fillOval(this.mCalibrationStartPoint.x - 8, this.mCalibrationStartPoint.y - 8, 16, 16);
+         this.mBoundsCheckOval = new Ellipse2D.Double(this.mCalibrationStartPoint.x - 125, this.mCalibrationStartPoint.y - 125, 250, 250);
+         graphics2DUtility.setColor(Color.RED);
+         graphics2DUtility.setStroke(new BasicStroke(5));
+         graphics2DUtility.draw(mBoundsCheckOval);
+      }//if
+   }//paintCalibrationStartingPoint
 }//MapDisplayPanel
