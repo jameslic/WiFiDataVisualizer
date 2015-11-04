@@ -128,4 +128,53 @@ public class SQLLiteConnection
       return training_point_location_list;
    }//loadTrainingPointLocations
 
+   public ArrayList<Point> loadRouterPointLocations()
+   {
+      ArrayList<Point> router_point_location_list = new ArrayList<>();
+      if (isDatabaseConnected())
+      {
+         for (int i = 0; i < 4; ++i)
+         {
+            Statement stmt = null;
+            String query =
+                    "SELECT SSID, x, y FROM APLocations WHERE SSID='CiscoLinksysE120" + i + "'";
+            //String query2 = "SELECT * FROM *;";
+
+            try
+            {
+               stmt = mDatabaseConnection.createStatement();
+               ResultSet query_result_set = stmt.executeQuery(query);
+               while (query_result_set.next())
+               {
+                  int x = query_result_set.getInt("x");
+                  int y = query_result_set.getInt("y");
+                  Point router_point = new Point(x, y);
+                  System.out.println("Read in router point: " + router_point.toString());
+                  router_point_location_list.add(router_point);
+               }//while
+            }//try//try
+            catch (SQLException ex)
+            {
+               Logger.getLogger(SQLLiteConnection.class.getName()).log(Level.SEVERE, null, ex);
+            }//catch
+            finally
+            {
+               if (stmt != null)
+               {
+                  try
+                  {
+                     stmt.close();
+                  }
+                  catch (SQLException ex)
+                  {
+                     Logger.getLogger(SQLLiteConnection.class.getName()).log(Level.SEVERE, null, ex);
+                  }//catch
+               }//if
+            }//finally
+         }//for
+      }//if (database is connected)
+
+      return router_point_location_list;
+   }//loadRouterPointLocations
+
 }//SQLLiteConnection

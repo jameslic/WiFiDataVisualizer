@@ -15,6 +15,7 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -39,23 +40,25 @@ public class MapDisplayPanel
    private final ArrayList<Rectangle2D> mRouterImageBoundedRectangleList;
    private final ArrayList<Point> mTrainingDataPointList;
 
-   public MapDisplayPanel(ArrayList<Point> trainingDataPointList)
+   public MapDisplayPanel(ArrayList<Point> trainingDataPointList, ArrayList<Point> routerPointList, ArrayList<String> routerResourcePath)
    {
       mMapPointsOfInterestList = new WeakHashMap<>(25);
       mRouterImageList = new ArrayList<>();
-      mRouterPointList = new ArrayList<>();
+      mRouterPointList = routerPointList;
       mTrainingDataPointList = trainingDataPointList;
       mRouterImageBoundedRectangleList = new ArrayList<>();
-      mRouterPointList.add(new Point(1131, 171));
-      mRouterPointList.add(new Point(445, 232));
-      mRouterPointList.add(new Point(559, 529));
-      mRouterPointList.add(new Point(1076, 520));
+      /*
+       mRouterPointList.add(new Point(1131, 171));
+       mRouterPointList.add(new Point(445, 232));
+       mRouterPointList.add(new Point(559, 529));
+       mRouterPointList.add(new Point(1076, 520));
+       */
       try
       {
-         mRouterImageList.add(ImageIO.read(new File("C:\\Workspace\\Thesis\\WiFiDataVisualizer\\src\\router1200.PNG")));
-         mRouterImageList.add(ImageIO.read(new File("C:\\Workspace\\Thesis\\WiFiDataVisualizer\\src\\router1201.PNG")));
-         mRouterImageList.add(ImageIO.read(new File("C:\\Workspace\\Thesis\\WiFiDataVisualizer\\src\\router1202.PNG")));
-         mRouterImageList.add(ImageIO.read(new File("C:\\Workspace\\Thesis\\WiFiDataVisualizer\\src\\router1203.PNG")));
+         for (String router_resource : routerResourcePath)
+         {
+            mRouterImageList.add(ImageIO.read(new File(router_resource)));
+         }//for
       }//try
       catch (IOException e)
       {

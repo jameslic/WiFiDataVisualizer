@@ -9,6 +9,9 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import javax.annotation.Resource;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
@@ -44,8 +47,16 @@ public class MapView
    {
       initComponents();
       this.setLayout(new GridBagLayout());
-      mSqlLiteConnection.connect("jdbc:sqlite:C:/Workspace/Thesis/WiFiDataVisualizer/src/bld2_ap_data.db", "bld2_ap_data");
-      mMapDisplayPanel = new MapDisplayPanel(mSqlLiteConnection.loadTrainingPointLocations());
+      ArrayList<String> router_resource_path = new ArrayList<>();
+      for (int i = 0; i < 4; ++i)
+      {
+         String resource_string = "resources/router120" + i + ".PNG";
+         router_resource_path.add((getClass().getResource(resource_string)).getPath());
+      }//for
+      //mSqlLiteConnection.connect("jdbc:sqlite:C:/Workspace/Thesis/WiFiDataVisualizer/src/bld2_ap_data.db", "bld2_ap_data");
+      String url_to_database = "jdbc:sqlite:" + this.getClass().getResource("").getPath() + "/resources/bld2_ap_data.db";
+      mSqlLiteConnection.connect(url_to_database, "bld2_ap_data");
+      mMapDisplayPanel = new MapDisplayPanel(mSqlLiteConnection.loadTrainingPointLocations(), mSqlLiteConnection.loadRouterPointLocations(), router_resource_path);
       mIndoorMap.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Bld2_ULQuadrantLabelsRemoved.PNG"))); // NOI18N
       mMapDisplayLayer = new JLayer<>(this.mIndoorMap, mMapDisplayPanel);
       this.add(mMapDisplayLayer);
@@ -71,8 +82,14 @@ public class MapView
       setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
       setTitle("Wifi Data Visualizer");
       setMaximumSize(new java.awt.Dimension(1400, 955));
-      setPreferredSize(new java.awt.Dimension(1400, 955));
       setResizable(false);
+      addWindowListener(new java.awt.event.WindowAdapter()
+      {
+         public void windowClosed(java.awt.event.WindowEvent evt)
+         {
+            formWindowClosed(evt);
+         }
+      });
 
       jMenu1.setText("File");
 
@@ -115,6 +132,12 @@ public class MapView
       // TODO add your handling code here:
       //Bring up the Map View choices dialog
    }//GEN-LAST:event_mSelectMapViewItemMenuKeyPressed
+
+   private void formWindowClosed(java.awt.event.WindowEvent evt)//GEN-FIRST:event_formWindowClosed
+   {//GEN-HEADEREND:event_formWindowClosed
+      // TODO add your handling code here:
+      this.mSqlLiteConnection.closeDatabase();
+   }//GEN-LAST:event_formWindowClosed
 
    /**
     * @param args the command line arguments
