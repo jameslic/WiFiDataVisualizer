@@ -1,4 +1,5 @@
 
+import com.sun.istack.internal.logging.Logger;
 import database.SQLLiteConnection;
 import java.awt.Graphics;
 import java.awt.GridBagLayout;
@@ -9,8 +10,15 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import static java.lang.Integer.max;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.logging.Level;
 import javax.annotation.Resource;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
@@ -19,7 +27,9 @@ import javax.swing.JLayer;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.plaf.LayerUI;
+import org.apache.commons.csv.CSVRecord;
 import wifidatavisualizer.MapDisplayPanel;
+import wifidatavisualizer.WifiDataReader;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -34,11 +44,18 @@ public class MapView
         extends javax.swing.JFrame
 {
 
+   final public static String ROUTER_PREFIX_SSID = "CiscoLinksysE120";
    JLabel mIndoorMap = new JLabel();
    //SQLLite Connection for connecting to the training data set
    SQLLiteConnection mSqlLiteConnection = new SQLLiteConnection();
    LayerUI<JLabel> mMapDisplayPanel;
    JLayer<JLabel> mMapDisplayLayer;
+   WifiDataReader mWifiDataReader = new WifiDataReader();
+   HashMap<String, Iterable<CSVRecord>> mSsidCsvRecordMap = new HashMap<>();
+   TreeMap<Integer, Integer> mRouter0TimestampRSSPairs = new TreeMap();
+   TreeMap<Integer, Integer> mRouter1TimestampRSSPairs = new TreeMap();
+   TreeMap<Integer, Integer> mRouter2TimestampRSSPairs = new TreeMap();
+   TreeMap<Integer, Integer> mRouter3TimestampRSSPairs = new TreeMap();
 
    /**
     * Creates new form MapView
@@ -53,6 +70,7 @@ public class MapView
          String resource_string = "resources/router120" + i + ".PNG";
          router_resource_path.add((getClass().getResource(resource_string)).getPath());
       }//for
+      generateCSVInputFileList(this.getClass().getResource("").getPath());
       String url_to_database = "jdbc:sqlite:" + this.getClass().getResource("").getPath() + "/resources/bld2_ap_data.db";
       mSqlLiteConnection.connect(url_to_database, "bld2_ap_data");
       mMapDisplayPanel = new MapDisplayPanel(mSqlLiteConnection.loadTrainingPointLocations(), mSqlLiteConnection.loadRouterPointLocations(), router_resource_path);
@@ -62,6 +80,39 @@ public class MapView
       this.pack();
 
    }//MapView
+
+   private void generateCSVInputFileList(String pathPrefix)
+   {
+      HashMap<String, String> csv_input_map = new HashMap<>();
+      for (int i = 0; i < 4; ++i)
+      {
+         String resource_string_path = pathPrefix + "data/02012015-5sec/" + this.ROUTER_PREFIX_SSID + i + ".csv";
+         csv_input_map.put(ROUTER_PREFIX_SSID + i, resource_string_path);
+      }//for
+      this.mWifiDataReader.openCSVFiles(csv_input_map);
+   }//generateCSVInputFileList
+
+   private void parseCSVRecords()
+   {
+      for (int i = 0; i < 4; ++i)
+      {
+         mSsidCsvRecordMap.put(ROUTER_PREFIX_SSID + i, mWifiDataReader.parseRecords(ROUTER_PREFIX_SSID + i));
+      }//for
+      int i = 0;
+      mRouter0TimestampRSSPairs = this.mWifiDataReader.getSortedTreeMap(mSsidCsvRecordMap.get(ROUTER_PREFIX_SSID + i));
+      ++i;
+      mRouter1TimestampRSSPairs = this.mWifiDataReader.getSortedTreeMap(mSsidCsvRecordMap.get(ROUTER_PREFIX_SSID + i));
+      ++i;
+      mRouter2TimestampRSSPairs = this.mWifiDataReader.getSortedTreeMap(mSsidCsvRecordMap.get(ROUTER_PREFIX_SSID + i));
+      ++i;
+      mRouter3TimestampRSSPairs = this.mWifiDataReader.getSortedTreeMap(mSsidCsvRecordMap.get(ROUTER_PREFIX_SSID + i));
+   }//parseCSVRecords
+
+   private int getLatestTimestampFromRouters()
+   {
+      return max(max(max(mRouter0TimestampRSSPairs.lastKey().intValue(), mRouter1TimestampRSSPairs.lastKey().intValue()),
+                     mRouter2TimestampRSSPairs.lastKey().intValue()), mRouter3TimestampRSSPairs.lastKey().intValue());
+   }
 
    /**
     * This method is called from within the constructor to
@@ -77,6 +128,7 @@ public class MapView
       jMenuBar1 = new javax.swing.JMenuBar();
       jMenu1 = new javax.swing.JMenu();
       mSelectMapViewItem = new javax.swing.JMenuItem();
+      jMenuItem1 = new javax.swing.JMenuItem();
 
       setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
       setTitle("Wifi Data Visualizer");
@@ -106,6 +158,16 @@ public class MapView
          }
       });
       jMenu1.add(mSelectMapViewItem);
+
+      jMenuItem1.setText("Play");
+      jMenuItem1.addActionListener(new java.awt.event.ActionListener()
+      {
+         public void actionPerformed(java.awt.event.ActionEvent evt)
+         {
+            jMenuItem1ActionPerformed(evt);
+         }
+      });
+      jMenu1.add(jMenuItem1);
 
       jMenuBar1.add(jMenu1);
 
@@ -137,6 +199,22 @@ public class MapView
       this.mSqlLiteConnection.closeDatabase();
    }//GEN-LAST:event_formWindowClosed
 
+   private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_jMenuItem1ActionPerformed
+   {//GEN-HEADEREND:event_jMenuItem1ActionPerformed
+      // TODO add your handling code here:
+      parseCSVRecords();
+      if (mRouter0TimestampRSSPairs.size() > 0)
+      {
+         int start_timestamp = mRouter0TimestampRSSPairs.firstKey().intValue();
+         int end_timestamp = getLatestTimestampFromRouters();
+         for (int timestamp_reference = start_timestamp; timestamp_reference < end_timestamp + 500; timestamp_reference += 5000)
+         {
+            int timestamp = mRouter0TimestampRSSPairs.subMap(timestamp_reference - 500, timestamp_reference + 500).firstKey();
+            java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Timestamp: " + timestamp);
+         }
+      }//if
+   }//GEN-LAST:event_jMenuItem1ActionPerformed
+
    /**
     * @param args the command line arguments
     */
@@ -155,25 +233,25 @@ public class MapView
             {
                javax.swing.UIManager.setLookAndFeel(info.getClassName());
                break;
-            }
-         }
-      }
+            }//if
+         }//for
+      }//try
       catch (ClassNotFoundException ex)
       {
          java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-      }
+      }//catch
       catch (InstantiationException ex)
       {
          java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-      }
+      }//catch
       catch (IllegalAccessException ex)
       {
          java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-      }
+      }//catch
       catch (javax.swing.UnsupportedLookAndFeelException ex)
       {
          java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-      }
+      }//catch
       //</editor-fold>
 
       /* Create and display the form */
@@ -189,6 +267,7 @@ public class MapView
    // Variables declaration - do not modify//GEN-BEGIN:variables
    private javax.swing.JMenu jMenu1;
    private javax.swing.JMenuBar jMenuBar1;
+   private javax.swing.JMenuItem jMenuItem1;
    private javax.swing.JMenuItem mSelectMapViewItem;
    // End of variables declaration//GEN-END:variables
 }
