@@ -18,6 +18,7 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import positioning.AccessPoint;
+import positioning.FingerprintingPoint;
 
 /**
  *
@@ -181,9 +182,11 @@ public class SQLLiteConnection
       return router_point_location_list;
    }//loadRouterPointLocations
 
-   public ArrayList<Point> getLikeliestPoints(ArrayList<AccessPoint> accessPointList)
+   public HashMap<String, FingerprintingPoint> getLikeliestPoints(ArrayList<AccessPoint> accessPointList)
    {
       ArrayList<String> possible_office_list = new ArrayList<>();
+      ArrayList<Integer> possible_office_signal_list_diff = new ArrayList<>();
+      ArrayList<String> originating_ssid = new ArrayList<>();
       if (isDatabaseConnected())
       {
          for (AccessPoint access_point : accessPointList)
@@ -204,7 +207,19 @@ public class SQLLiteConnection
                   int rss = query_result_set.getInt("RSS");
                   String office_id = query_result_set.getString("Office");
                   possible_office_list.add(office_id);
-                  System.out.println("Read in Office Reading (RSS, OfficeId): (" + rss + ", " + office_id + ")");
+                  //Add a factor if the signal level is weak to help prioritize later
+                  //Find out how weak the signal is and add a differential factor to it
+                  int signal_weakness_factor = abs(access_point.getSignalLevel()) - 55;
+                  if (signal_weakness_factor > 0)
+                  {
+                     int signal_weakness_adder = signal_weakness_factor / 5;
+                     possible_office_signal_list_diff.add(abs(abs(access_point.getSignalLevel()) - rss) + signal_weakness_adder);
+                  }//if
+                  else
+                  {
+                     possible_office_signal_list_diff.add(abs(abs(access_point.getSignalLevel()) - rss));
+                  }
+                  originating_ssid.add(access_point.getSSID());
                }//while
             }//try//try
             catch (SQLException ex)
@@ -227,31 +242,48 @@ public class SQLLiteConnection
             }//finally
          }//for
       }//if (database is connected)
-      return getPointsFromOfficeList(possible_office_list);
+      return getPointsFromOfficeList(possible_office_list, possible_office_signal_list_diff, originating_ssid);
    }//getLikeliestPoints
 
-   private ArrayList<Point> getPointsFromOfficeList(ArrayList<String> officeIdList)
+   private HashMap<String, FingerprintingPoint> getPointsFromOfficeList(ArrayList<String> officeIdList,
+           ArrayList<Integer> officeSignalLevelDiff, ArrayList<String> originatingSSID)
    {
-      ArrayList<Point> resultant_point_list = new ArrayList<>();
+      HashMap<String, FingerprintingPoint> resultant_point_list = new HashMap<>();
       if (isDatabaseConnected())
       {
+         int signal_diff_list_index = 0;
          for (String office_id_string : officeIdList)
-         {;
+         {
             Statement stmt = null;
-            String query = "SELECT x, y FROM OfficeLocations WHERE Office='" + office_id_string + "'";
+            String query = "SELECT x, y FROM TrainingPointLocations WHERE Office='" + office_id_string + "'";
             try
             {
                stmt = mDatabaseConnection.createStatement();
                ResultSet query_result_set = stmt.executeQuery(query);
                while (query_result_set.next())
                {
-                  int x = query_result_set.getInt("x");
-                  int y = query_result_set.getInt("y");
-                  Point office_point = new Point(x, y);
-                  resultant_point_list.add(office_point);
-                  System.out.println("Read in Office Point (x, y): (" + x + ", " + y + ")");
+                  if (resultant_point_list.get(office_id_string) != null)
+                  {
+                     resultant_point_list.get(office_id_string).incrementFrequencyCount();
+                     System.out.println("Read in Office Point " + resultant_point_list.get(office_id_string).getFrequencyCount()
+                             + " times! OfficeID: " + resultant_point_list.get(office_id_string).getLocationID()
+                     );
+                     resultant_point_list.get(office_id_string).addSignalLevelDiff(originatingSSID.get(signal_diff_list_index),
+                                                                                   officeSignalLevelDiff.get(signal_diff_list_index));
+                  }//if
+                  else
+                  {
+                     int x = query_result_set.getInt("x");
+                     int y = query_result_set.getInt("y");
+                     Point office_point = new Point(x, y);
+                     FingerprintingPoint fingerprint_point = new FingerprintingPoint(office_point, office_id_string);
+                     fingerprint_point.addSignalLevelDiff(originatingSSID.get(signal_diff_list_index),
+                                                          officeSignalLevelDiff.get(signal_diff_list_index));
+                     resultant_point_list.put(office_id_string, fingerprint_point);
+                  }//else
                }//while
-            }//try//try
+               ++signal_diff_list_index;
+            }//for
             catch (SQLException ex)
             {
                Logger.getLogger(SQLLiteConnection.class.getName()).log(Level.SEVERE, null, ex);
