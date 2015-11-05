@@ -32,6 +32,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.plaf.LayerUI;
 import org.apache.commons.csv.CSVRecord;
 import positioning.AccessPoint;
+import positioning.Fingerprinting;
 import positioning.Triangulation;
 import positioning.Trilateration;
 import wifidatavisualizer.MapDisplayPanel;
@@ -123,13 +124,13 @@ public class MapView
    {
       return max(max(max(mRouter0TimestampRSSPairs.lastKey().intValue(), mRouter1TimestampRSSPairs.lastKey().intValue()),
                      mRouter2TimestampRSSPairs.lastKey().intValue()), mRouter3TimestampRSSPairs.lastKey().intValue());
-   }
+   }//getLatestTimestampFromRouters
 
    private int getEarliestTimestampFromRouters()
    {
       return min(min(min(mRouter0TimestampRSSPairs.firstKey().intValue(), mRouter1TimestampRSSPairs.firstKey().intValue()),
                      mRouter2TimestampRSSPairs.firstKey().intValue()), mRouter3TimestampRSSPairs.firstKey().intValue());
-   }
+   }//getEarliestTimestampFromRouters
 
    /**
     * This method is called from within the constructor to
@@ -272,9 +273,10 @@ public class MapView
          java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Triangulation Point: {0}", resultingPoint.toString());
          Point resultingPoint2 = Trilateration.findCenterPoint(access_point_list);
          java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Trilateration Point: {0}", resultingPoint2.toString());
+         Point resultingPoint3 = Fingerprinting.fingerprint(access_point_list, this.mSqlLiteConnection);
+         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Fingerprinting Point: {0}", resultingPoint3.toString());
 
       }//if
-
    }//makeApproximation
 
    private ArrayList<AccessPoint> getThreeBestRouters(ArrayList<AccessPoint> arrayList)
@@ -337,9 +339,9 @@ public class MapView
          public void run()
          {
             new MapView().setVisible(true);
-         }
+         }//run
       });
-   }
+   }//main
 
    // Variables declaration - do not modify//GEN-BEGIN:variables
    private javax.swing.JMenu jMenu1;
@@ -347,4 +349,4 @@ public class MapView
    private javax.swing.JMenuItem jMenuItem1;
    private javax.swing.JMenuItem mSelectMapViewItem;
    // End of variables declaration//GEN-END:variables
-}
+}//MapView

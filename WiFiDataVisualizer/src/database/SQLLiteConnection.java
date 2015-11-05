@@ -6,14 +6,18 @@
 package database;
 
 import java.awt.Point;
+import static java.lang.Math.abs;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import positioning.AccessPoint;
 
 /**
  *
@@ -176,5 +180,99 @@ public class SQLLiteConnection
 
       return router_point_location_list;
    }//loadRouterPointLocations
+
+   public ArrayList<Point> getLikeliestPoints(ArrayList<AccessPoint> accessPointList)
+   {
+      ArrayList<String> possible_office_list = new ArrayList<>();
+      if (isDatabaseConnected())
+      {
+         for (AccessPoint access_point : accessPointList)
+         {
+            int rss_lower_bound = abs(access_point.getSignalLevel() - 2);
+            int rss_upper_bound = abs(access_point.getSignalLevel() + 2);
+            Statement stmt = null;
+            String query =
+                    "SELECT * FROM " + access_point.getSSID()
+                    + " WHERE RSS BETWEEN " + rss_upper_bound
+                    + " AND " + rss_lower_bound;
+            try
+            {
+               stmt = mDatabaseConnection.createStatement();
+               ResultSet query_result_set = stmt.executeQuery(query);
+               while (query_result_set.next())
+               {
+                  int rss = query_result_set.getInt("RSS");
+                  String office_id = query_result_set.getString("Office");
+                  possible_office_list.add(office_id);
+                  System.out.println("Read in Office Reading (RSS, OfficeId): (" + rss + ", " + office_id + ")");
+               }//while
+            }//try//try
+            catch (SQLException ex)
+            {
+               Logger.getLogger(SQLLiteConnection.class.getName()).log(Level.SEVERE, null, ex);
+            }//catch
+            finally
+            {
+               if (stmt != null)
+               {
+                  try
+                  {
+                     stmt.close();
+                  }
+                  catch (SQLException ex)
+                  {
+                     Logger.getLogger(SQLLiteConnection.class.getName()).log(Level.SEVERE, null, ex);
+                  }//catch
+               }//if
+            }//finally
+         }//for
+      }//if (database is connected)
+      return getPointsFromOfficeList(possible_office_list);
+   }//getLikeliestPoints
+
+   private ArrayList<Point> getPointsFromOfficeList(ArrayList<String> officeIdList)
+   {
+      ArrayList<Point> resultant_point_list = new ArrayList<>();
+      if (isDatabaseConnected())
+      {
+         for (String office_id_string : officeIdList)
+         {;
+            Statement stmt = null;
+            String query = "SELECT x, y FROM OfficeLocations WHERE Office='" + office_id_string + "'";
+            try
+            {
+               stmt = mDatabaseConnection.createStatement();
+               ResultSet query_result_set = stmt.executeQuery(query);
+               while (query_result_set.next())
+               {
+                  int x = query_result_set.getInt("x");
+                  int y = query_result_set.getInt("y");
+                  Point office_point = new Point(x, y);
+                  resultant_point_list.add(office_point);
+                  System.out.println("Read in Office Point (x, y): (" + x + ", " + y + ")");
+               }//while
+            }//try//try
+            catch (SQLException ex)
+            {
+               Logger.getLogger(SQLLiteConnection.class.getName()).log(Level.SEVERE, null, ex);
+            }//catch
+            finally
+            {
+               if (stmt != null)
+               {
+                  try
+                  {
+                     stmt.close();
+                  }
+                  catch (SQLException ex)
+                  {
+                     Logger.getLogger(SQLLiteConnection.class.getName()).log(Level.SEVERE, null, ex);
+                  }//catch
+               }//if
+            }//finally
+         }//for
+      }//if (database is connected)
+      return resultant_point_list;
+   }//getPointFromOfficeList
 
 }//SQLLiteConnection
