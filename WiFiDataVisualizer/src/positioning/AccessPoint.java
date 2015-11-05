@@ -5,6 +5,7 @@
  */
 package positioning;
 
+import java.awt.Point;
 import java.util.Date;
 
 /**
@@ -12,17 +13,27 @@ import java.util.Date;
  * @author James Licata
  */
 public class AccessPoint
+        implements Comparable<AccessPoint>
 {
+   public double PIXELS_PER_FOOT = 5.7;
+   public double FEET_PER_METER = 0.3048;
    public static final int MIN_SIGNAL_LEVEL = Integer.MIN_VALUE;
 
    String SSID;
 
    String macAddress;
-   int signalLevel = 0;
-   Point2D coordinates = new Point2D(0, 0);
+   int mRSSdBsm = 0;
+   Point mAccessPointCoordinate = new Point(0, 0);
    double signalStrengthToDistanceRatio = 1;
 
    Date timestamp;
+
+   public AccessPoint(int RSS, Point accessPointLocation, String ssid)
+   {
+      this.setCoordinates(accessPointLocation);
+      this.setSignalLevel(RSS);
+      this.setSSID(ssid);
+   }//AccessPoint
 
    public Date getTimestamp()
    {
@@ -46,22 +57,22 @@ public class AccessPoint
 
    public int getSignalLevel()
    {
-      return signalLevel;
+      return mRSSdBsm;
    }
 
    public void setSignalLevel(int signalLevel)
    {
-      this.signalLevel = signalLevel;
+      this.mRSSdBsm = signalLevel;
    }
 
-   public Point2D getCoordinates()
+   public Point getCoordinates()
    {
-      return coordinates;
+      return mAccessPointCoordinate;
    }
 
-   public void setCoordinates(Point2D coordinates)
+   public void setCoordinates(Point coordinates)
    {
-      this.coordinates = coordinates;
+      this.mAccessPointCoordinate = coordinates;
    }
 
    public double getSignalStrengthToDistanceRatio()
@@ -85,8 +96,28 @@ public class AccessPoint
       SSID = sSID;
    }
 
+   public double getDistanceMeters()
+   {
+      double exp = (27.55 - (20 * Math.log10(2437)) + Math.abs(this.getSignalLevel())) / 20.0;
+      return Math.pow(10.0, exp);
+   }//getDistanceMeters
+
    public double getDistance()
    {
-      return signalStrengthToDistanceRatio * (100 + signalLevel);
+      //Return pixel distance
+      double distance_meters = getDistanceMeters();
+      double distance_feet = distance_meters * this.FEET_PER_METER;
+
+      return distance_feet * this.PIXELS_PER_FOOT;
    }
-}
+
+   @Override
+   public int compareTo(AccessPoint other)
+   {
+      // compareTo should return < 0 if this is supposed to be
+      // less than other, > 0 if this is supposed to be greater than
+      // other and 0 if they are supposed to be equal
+      int result = ((Integer) mRSSdBsm).compareTo((Integer) other.mRSSdBsm);
+      return result;
+   }//compareTo
+}//AccessPoint

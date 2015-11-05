@@ -11,12 +11,15 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import static java.lang.Integer.max;
+import static java.lang.Integer.min;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import javax.annotation.Resource;
@@ -28,6 +31,9 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.plaf.LayerUI;
 import org.apache.commons.csv.CSVRecord;
+import positioning.AccessPoint;
+import positioning.Triangulation;
+import positioning.Trilateration;
 import wifidatavisualizer.MapDisplayPanel;
 import wifidatavisualizer.WifiDataReader;
 
@@ -56,6 +62,8 @@ public class MapView
    TreeMap<Integer, Integer> mRouter1TimestampRSSPairs = new TreeMap();
    TreeMap<Integer, Integer> mRouter2TimestampRSSPairs = new TreeMap();
    TreeMap<Integer, Integer> mRouter3TimestampRSSPairs = new TreeMap();
+   String mCsvInputFilePathPrefix = "";
+   ArrayList<Point> mRouterPointList;
 
    /**
     * Creates new form MapView
@@ -70,10 +78,11 @@ public class MapView
          String resource_string = "resources/router120" + i + ".PNG";
          router_resource_path.add((getClass().getResource(resource_string)).getPath());
       }//for
-      generateCSVInputFileList(this.getClass().getResource("").getPath());
+      mCsvInputFilePathPrefix = this.getClass().getResource("").getPath();
       String url_to_database = "jdbc:sqlite:" + this.getClass().getResource("").getPath() + "/resources/bld2_ap_data.db";
       mSqlLiteConnection.connect(url_to_database, "bld2_ap_data");
-      mMapDisplayPanel = new MapDisplayPanel(mSqlLiteConnection.loadTrainingPointLocations(), mSqlLiteConnection.loadRouterPointLocations(), router_resource_path);
+      mRouterPointList = mSqlLiteConnection.loadRouterPointLocations();
+      mMapDisplayPanel = new MapDisplayPanel(mSqlLiteConnection.loadTrainingPointLocations(), mRouterPointList, router_resource_path);
       mIndoorMap.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Bld2_ULQuadrantLabelsRemoved.PNG"))); // NOI18N
       mMapDisplayLayer = new JLayer<>(this.mIndoorMap, mMapDisplayPanel);
       this.add(mMapDisplayLayer);
@@ -94,6 +103,7 @@ public class MapView
 
    private void parseCSVRecords()
    {
+      generateCSVInputFileList(mCsvInputFilePathPrefix);
       for (int i = 0; i < 4; ++i)
       {
          mSsidCsvRecordMap.put(ROUTER_PREFIX_SSID + i, mWifiDataReader.parseRecords(ROUTER_PREFIX_SSID + i));
@@ -106,12 +116,19 @@ public class MapView
       mRouter2TimestampRSSPairs = this.mWifiDataReader.getSortedTreeMap(mSsidCsvRecordMap.get(ROUTER_PREFIX_SSID + i));
       ++i;
       mRouter3TimestampRSSPairs = this.mWifiDataReader.getSortedTreeMap(mSsidCsvRecordMap.get(ROUTER_PREFIX_SSID + i));
+      this.mWifiDataReader.closeFiles();
    }//parseCSVRecords
 
    private int getLatestTimestampFromRouters()
    {
       return max(max(max(mRouter0TimestampRSSPairs.lastKey().intValue(), mRouter1TimestampRSSPairs.lastKey().intValue()),
                      mRouter2TimestampRSSPairs.lastKey().intValue()), mRouter3TimestampRSSPairs.lastKey().intValue());
+   }
+
+   private int getEarliestTimestampFromRouters()
+   {
+      return min(min(min(mRouter0TimestampRSSPairs.firstKey().intValue(), mRouter1TimestampRSSPairs.firstKey().intValue()),
+                     mRouter2TimestampRSSPairs.firstKey().intValue()), mRouter3TimestampRSSPairs.firstKey().intValue());
    }
 
    /**
@@ -201,19 +218,79 @@ public class MapView
 
    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_jMenuItem1ActionPerformed
    {//GEN-HEADEREND:event_jMenuItem1ActionPerformed
-      // TODO add your handling code here:
+      //Read in the input data
       parseCSVRecords();
+
+      //After it is read to process, start looking through it at the input interval
       if (mRouter0TimestampRSSPairs.size() > 0)
       {
-         int start_timestamp = mRouter0TimestampRSSPairs.firstKey().intValue();
+         int start_timestamp = getEarliestTimestampFromRouters();
          int end_timestamp = getLatestTimestampFromRouters();
          for (int timestamp_reference = start_timestamp; timestamp_reference < end_timestamp + 500; timestamp_reference += 5000)
          {
-            int timestamp = mRouter0TimestampRSSPairs.subMap(timestamp_reference - 500, timestamp_reference + 500).firstKey();
-            java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Timestamp: " + timestamp);
-         }
+            ArrayList<SortedMap<Integer, Integer>> mSubmapArrayList = new ArrayList<>();
+            mSubmapArrayList.add(mRouter0TimestampRSSPairs.subMap(timestamp_reference - 500, timestamp_reference + 500));
+            mSubmapArrayList.add(mRouter1TimestampRSSPairs.subMap(timestamp_reference - 500, timestamp_reference + 500));
+            mSubmapArrayList.add(mRouter2TimestampRSSPairs.subMap(timestamp_reference - 500, timestamp_reference + 500));
+            mSubmapArrayList.add(mRouter3TimestampRSSPairs.subMap(timestamp_reference - 500, timestamp_reference + 500));
+
+            makeApproximation(mSubmapArrayList);
+         }//for
       }//if
    }//GEN-LAST:event_jMenuItem1ActionPerformed
+
+   private void printSubMap(SortedMap<Integer, Integer> submap, int index)
+   {
+      if (submap.size() > 0)
+      {
+         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "*********\nCiscoLinksysE120{0}\n********", index);
+         Entry<Integer, Integer> router0_entry = submap.entrySet().iterator().next();
+         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Timestamp: {0}", router0_entry.getKey());
+         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "RSS: {0}", router0_entry.getValue());
+      }//if
+   }//printSubmMap
+
+   private void makeApproximation(ArrayList<SortedMap<Integer, Integer>> accessPointArrayList)
+   {
+      ArrayList<AccessPoint> access_point_list = new ArrayList<>();
+      int active_router_index = 0;
+      for (int i = 0; i < accessPointArrayList.size(); ++i)
+      {
+         if (accessPointArrayList.get(i).size() == 1 && mRouterPointList.size() == 4 && accessPointArrayList.get(i).isEmpty() == false)
+         {
+            access_point_list.add(new AccessPoint(accessPointArrayList.get(i).entrySet().iterator().next().getValue(), mRouterPointList.get(i), "CiscoLinksysE120" + i));
+            java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "RSS: {0}", access_point_list.get(active_router_index).getSignalLevel());
+            java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "SSID: {0}", access_point_list.get(active_router_index).getSSID());
+            java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Point: {0}", access_point_list.get(active_router_index).getCoordinates());
+            ++active_router_index;
+         }//if
+      }//for
+      getThreeBestRouters(access_point_list);
+      if (access_point_list.size() == 3)
+      {
+         Point resultingPoint = Triangulation.triangulate(access_point_list);
+         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Triangulation Point: {0}", resultingPoint.toString());
+         Point resultingPoint2 = Trilateration.findCenterPoint(access_point_list);
+         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Trilateration Point: {0}", resultingPoint2.toString());
+
+      }//if
+
+   }//makeApproximation
+
+   private ArrayList<AccessPoint> getThreeBestRouters(ArrayList<AccessPoint> arrayList)
+   {
+      ArrayList<AccessPoint> access_points_final_trio = new ArrayList<>();
+      if (arrayList.size() == 4)
+      {
+         int minIndex = arrayList.indexOf(Collections.min(arrayList));
+         arrayList.remove(minIndex);
+         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Distance in pixels: {0}", arrayList.get(0).getDistance());
+         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Distance in pixels: {0}", arrayList.get(1).getDistance());
+         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Distance in pixels: {0}", arrayList.get(2).getDistance());
+      }//if
+
+      return access_points_final_trio;
+   }//getThreeBestRouters
 
    /**
     * @param args the command line arguments

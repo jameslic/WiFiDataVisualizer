@@ -121,6 +121,11 @@ public class MapDisplayPanel
       }//if
    }//processMouseEvent
 
+   public ArrayList<Point> getRouterPointList()
+   {
+      return this.mRouterPointList;
+   }
+
    public void addNewWiFiLocalizationPoint(Point wifiLocalizationPoint, JLayer<? extends JLabel> layer)
    {
       ArrayList<Point> points = mMapPointsOfInterestList.get(layer);

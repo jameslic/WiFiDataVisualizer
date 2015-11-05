@@ -10,14 +10,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import static java.lang.Math.abs;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 
 /**
@@ -27,12 +25,10 @@ import org.apache.commons.csv.CSVRecord;
 public class WifiDataReader
 {
    HashMap<String, Reader> mWifiDataCSVFileMap;
-   ArrayList<Reader> mWifiDataCSVFilesList;
 
    public WifiDataReader()
    {
       mWifiDataCSVFileMap = new HashMap<>();
-      mWifiDataCSVFilesList = new ArrayList<>();
    }//WifiDataReader
 
    public void openCSVFiles(HashMap<String, String> csvFileList)
@@ -52,6 +48,23 @@ public class WifiDataReader
          Logger.getLogger(WifiDataReader.class.getName()).log(Level.SEVERE, null, ex);
       }
    }//openCSVFiles
+
+   public void closeFiles()
+   {
+      for (int i = 0; i < 4; ++i)
+      {
+         String ssid_id = "CiscoLinksysE120" + i;
+         try
+         {
+            mWifiDataCSVFileMap.get(ssid_id).close();
+         }
+         catch (IOException ex)
+         {
+            Logger.getLogger(WifiDataReader.class.getName()).log(Level.SEVERE, null, ex);
+         }
+      }//for
+      mWifiDataCSVFileMap.clear();
+   }//closeFiles
 
    public Iterable<CSVRecord> parseRecords(String ssid)
    {
