@@ -92,6 +92,7 @@ public class MapView
       mRouterPointList = mSqlLiteConnection.loadRouterPointLocations();
       mMapDisplayPanel = new MapDisplayPanel(mSqlLiteConnection.loadTrainingPointLocations(), mRouterPointList, router_resource_path);
       mIndoorMap.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Bld2_ULQuadrantLabelsRemoved.PNG"))); // NOI18N
+      this.addListener(mMapDisplayPanel);
       mMapDisplayLayer = new JLayer<>(this.mIndoorMap, mMapDisplayPanel);
       this.add(mMapDisplayLayer);
       this.pack();
@@ -112,8 +113,9 @@ public class MapView
       for (NewWifiDataListener hl : mWifiDataListeners)
       {
          hl.newWifiData(newData, dataType);
+         this.repaint();
       }//for
-   }
+   }//newWifiData
 
    private void testLayer()
    {
@@ -210,6 +212,13 @@ public class MapView
          {
          }
       });
+      mSelectMapViewItem.addActionListener(new java.awt.event.ActionListener()
+      {
+         public void actionPerformed(java.awt.event.ActionEvent evt)
+         {
+            mSelectMapViewItemActionPerformed(evt);
+         }
+      });
       jMenu1.add(mSelectMapViewItem);
 
       jMenuItem1.setText("Play");
@@ -274,6 +283,12 @@ public class MapView
          }//for
       }//if
    }//GEN-LAST:event_jMenuItem1ActionPerformed
+
+   private void mSelectMapViewItemActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mSelectMapViewItemActionPerformed
+   {//GEN-HEADEREND:event_mSelectMapViewItemActionPerformed
+      // TODO add your handling code here:
+      this.newWifiData(new Point(300, 300), NewWifiDataListener.WifiDataType.TRILATERATION);
+   }//GEN-LAST:event_mSelectMapViewItemActionPerformed
 
    private void printSubMap(SortedMap<Integer, Integer> submap, int index)
    {

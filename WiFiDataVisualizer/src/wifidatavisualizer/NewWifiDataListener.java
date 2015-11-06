@@ -20,7 +20,8 @@ public interface NewWifiDataListener
    {
       TRILATERATION,
       TRIANGULATION,
-      FINGERPRINTING
+      FINGERPRINTING,
+      DEFAULT
    }
 
 }

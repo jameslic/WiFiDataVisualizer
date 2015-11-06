@@ -38,7 +38,7 @@ public class MapDisplayPanel
         extends LayerUI<JLabel>
         implements NewWifiDataListener
 {
-   private final Map<JLayer, ArrayList<Point>> mMapPointsOfInterestList;
+   private final Map<NewWifiDataListener.WifiDataType, ArrayList<Point>> mMapPointsOfInterestList;
    private final ArrayList<Point> mRouterPointList;
    private final ArrayList<Image> mRouterImageList;
    private final ArrayList<Rectangle2D> mRouterImageBoundedRectangleList;
@@ -81,7 +81,7 @@ public class MapDisplayPanel
    public void uninstallUI(JComponent c)
    {
       super.uninstallUI(c);
-      mMapPointsOfInterestList.remove((JLayer) c);
+      mMapPointsOfInterestList.clear();
       this.mMapPointsOfInterestList.clear();
       this.mRouterImageBoundedRectangleList.clear();
       this.mRouterPointList.clear();
@@ -92,12 +92,6 @@ public class MapDisplayPanel
    {
       if (mouseEvent.getID() == MouseEvent.MOUSE_CLICKED && SwingUtilities.isRightMouseButton(mouseEvent) && mStartPointChosen == false)
       {
-         ArrayList<Point> points = mMapPointsOfInterestList.get(layer);
-         if (points == null)
-         {
-            points = new ArrayList<>();
-            mMapPointsOfInterestList.put(layer, points);
-         }//if
          Point mouse_point = mouseEvent.getPoint();
          mouse_point = SwingUtilities.convertPoint(mouseEvent.getComponent(), mouse_point, layer);
          int dialog_choice_result = JOptionPane.showConfirmDialog(null, "Choose the following point as the starting calibration point?" + "\nX: " + mouse_point.x + " Y: " + mouse_point.y
@@ -131,13 +125,14 @@ public class MapDisplayPanel
 
    public void addNewWiFiLocalizationPoint(Point wifiLocalizationPoint, JLayer<? extends JLabel> layer)
    {
-      ArrayList<Point> points = mMapPointsOfInterestList.get(layer);
-      if (points == null)
-      {
-         points = new ArrayList<>();
-      }//if
-      points.add(wifiLocalizationPoint);
-      layer.repaint();
+      /*ArrayList<Point> points = mMapPointsOfInterestList.get(layer);
+       if (points == null)
+       {
+       points = new ArrayList<>();
+       }//if
+       points.add(wifiLocalizationPoint);
+       layer.repaint();
+       */
    }//addNewWiFiLocalizationPoint
 
    @Override
@@ -147,15 +142,42 @@ public class MapDisplayPanel
       super.paint(graphics_2d_utility, c);
       graphics_2d_utility.setColor(Color.BLUE);
       graphics_2d_utility.drawRect(0, 0, c.getWidth() - 1, c.getHeight() - 1);
-      ArrayList<Point> map_points_of_interest_list = mMapPointsOfInterestList.get((JLayer) c);
-      if (map_points_of_interest_list != null && map_points_of_interest_list.size() > 0)
+      ///ArrayList<Point> map_points_of_interest_list = mMapPointsOfInterestList.get((JLayer) c);
+      for (NewWifiDataListener.WifiDataType type : NewWifiDataListener.WifiDataType.values())
       {
-         graphics_2d_utility.setColor(Color.RED);
-         for (Point p : map_points_of_interest_list)
+         ArrayList<Point> points_to_draw = new ArrayList<Point>();
+         //Choose the color based on the algorithm
+         switch (type)
          {
-            graphics_2d_utility.fillOval(p.x - 4, p.y - 4, 8, 8);
-         }//for
-      }//if
+            case FINGERPRINTING:
+               graphics_2d_utility.setColor(Color.MAGENTA);
+               points_to_draw = this.mMapPointsOfInterestList.get(type);
+               break;
+            case TRIANGULATION:
+               graphics_2d_utility.setColor(Color.GREEN);
+               points_to_draw = this.mMapPointsOfInterestList.get(type);
+               break;
+            case TRILATERATION:
+               graphics_2d_utility.setColor(Color.DARK_GRAY);
+               points_to_draw = this.mMapPointsOfInterestList.get(type);
+               break;
+            default:
+               graphics_2d_utility.setColor(Color.RED);
+               points_to_draw = this.mMapPointsOfInterestList.get(type);
+               break;
+         }//switch
+         if (points_to_draw != null && points_to_draw.size() > 0)
+         {
+            for (Point p : points_to_draw)
+            {
+               graphics_2d_utility.fillOval(p.x - 4, p.y - 4, 8, 8);
+               this.mBoundsCheckOval = new Ellipse2D.Double(p.x - 125, p.y - 125, 250, 250);
+               graphics_2d_utility.setStroke(new BasicStroke(5));
+               graphics_2d_utility.draw(mBoundsCheckOval);
+            }//for
+         }//if
+      }//for
+
       paintTrainingData(graphics_2d_utility, c);
       paintRouters(graphics_2d_utility, c);
       paintCalibrationStartingPoint(graphics_2d_utility, c);
@@ -225,6 +247,7 @@ public class MapDisplayPanel
    @Override
    public void newWifiData(Point newWifiPoint, NewWifiDataListener.WifiDataType dataType)
    {
-      throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+      int test = 1;
+      //mMapPointsOfInterestList.p
    }
 }//MapDisplayPanel
