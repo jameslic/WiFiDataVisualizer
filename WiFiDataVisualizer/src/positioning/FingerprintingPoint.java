@@ -9,6 +9,7 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Map.Entry;
 
 /**
  *
@@ -69,6 +70,16 @@ public class FingerprintingPoint
    {
       mLocationID = locationID;
    }//setLocationID
+
+   public double getAverageSignalDiff()
+   {
+      double total_value = 0;
+      for (Entry<String, Integer> test : mRouterSignalLevelDifferenceMap.entrySet())
+      {
+         total_value += test.getValue();
+      }//for
+      return total_value / (double) mRouterSignalLevelDifferenceMap.entrySet().size();
+   }
 
    @Override
    public int compareTo(FingerprintingPoint other)

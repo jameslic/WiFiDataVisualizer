@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import javax.imageio.ImageIO;
 import javax.swing.JComponent;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JLayer;
 import javax.swing.JOptionPane;
@@ -35,6 +36,7 @@ import javax.swing.plaf.LayerUI;
  */
 public class MapDisplayPanel
         extends LayerUI<JLabel>
+        implements NewWifiDataListener
 {
    private final Map<JLayer, ArrayList<Point>> mMapPointsOfInterestList;
    private final ArrayList<Point> mRouterPointList;
@@ -44,6 +46,7 @@ public class MapDisplayPanel
    public boolean mStartPointChosen = false;
    private Point mCalibrationStartPoint = new Point(500, 500);
    private Ellipse2D mBoundsCheckOval = null;
+   JFrame mParentFrame;
 
    public MapDisplayPanel(ArrayList<Point> trainingDataPointList, ArrayList<Point> routerPointList, ArrayList<String> routerResourcePath)
    {
@@ -218,4 +221,10 @@ public class MapDisplayPanel
          graphics2DUtility.draw(mBoundsCheckOval);
       }//if
    }//paintCalibrationStartingPoint
+
+   @Override
+   public void newWifiData(Point newWifiPoint, NewWifiDataListener.WifiDataType dataType)
+   {
+      throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+   }
 }//MapDisplayPanel

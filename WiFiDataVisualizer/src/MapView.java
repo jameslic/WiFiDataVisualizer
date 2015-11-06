@@ -1,10 +1,12 @@
 
 import com.sun.istack.internal.logging.Logger;
 import database.SQLLiteConnection;
+import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.GridBagLayout;
 import java.awt.Image;
 import java.awt.Insets;
+import java.awt.List;
 import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
@@ -27,6 +29,7 @@ import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JLayer;
+import javax.swing.JLayeredPane;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.plaf.LayerUI;
@@ -37,6 +40,7 @@ import positioning.Triangulation;
 import positioning.Trilateration;
 import wifidatavisualizer.MapDisplayPanel;
 import wifidatavisualizer.WifiDataReader;
+import wifidatavisualizer.NewWifiDataListener;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -55,7 +59,8 @@ public class MapView
    JLabel mIndoorMap = new JLabel();
    //SQLLite Connection for connecting to the training data set
    SQLLiteConnection mSqlLiteConnection = new SQLLiteConnection();
-   LayerUI<JLabel> mMapDisplayPanel;
+   //LayerUI<JLabel> mMapDisplayPanel;
+   MapDisplayPanel mMapDisplayPanel;
    JLayer<JLabel> mMapDisplayLayer;
    WifiDataReader mWifiDataReader = new WifiDataReader();
    HashMap<String, Iterable<CSVRecord>> mSsidCsvRecordMap = new HashMap<>();
@@ -65,12 +70,14 @@ public class MapView
    TreeMap<Integer, Integer> mRouter3TimestampRSSPairs = new TreeMap();
    String mCsvInputFilePathPrefix = "";
    ArrayList<Point> mRouterPointList;
+   ArrayList<NewWifiDataListener> mWifiDataListeners;
 
    /**
     * Creates new form MapView
     */
    public MapView()
    {
+      this.mWifiDataListeners = new ArrayList<>();
       initComponents();
       this.setLayout(new GridBagLayout());
       ArrayList<String> router_resource_path = new ArrayList<>();
@@ -88,8 +95,36 @@ public class MapView
       mMapDisplayLayer = new JLayer<>(this.mIndoorMap, mMapDisplayPanel);
       this.add(mMapDisplayLayer);
       this.pack();
+      testLayer();
 
    }//MapView
+
+   public void addListener(NewWifiDataListener toAdd)
+   {
+      mWifiDataListeners.add(toAdd);
+   }
+
+   public void newWifiData(Point newData, NewWifiDataListener.WifiDataType dataType)
+   {
+      System.out.println("Hello!!");
+
+      // Notify everybody that may be interested.
+      for (NewWifiDataListener hl : mWifiDataListeners)
+      {
+         hl.newWifiData(newData, dataType);
+      }//for
+   }
+
+   private void testLayer()
+   {
+      JLayeredPane test_pane = this.getLayeredPane();
+      int component_count = test_pane.getComponentCount();
+      Component[] components = test_pane.getComponents();
+      Component test_comp = components[0].getComponentAt(500, 500);
+      //(JLayer) test_comp.get
+      Component test_comp2 = test_comp.getComponentAt(500, 500);
+      System.out.println("TEST");
+   }
 
    private void generateCSVInputFileList(String pathPrefix)
    {
@@ -275,7 +310,6 @@ public class MapView
          java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Trilateration Point: {0}", resultingPoint2.toString());
          Point resultingPoint3 = Fingerprinting.fingerprint(access_point_list, this.mSqlLiteConnection);
          java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Fingerprinting Point: {0}", resultingPoint3.toString());
-
       }//if
    }//makeApproximation
 

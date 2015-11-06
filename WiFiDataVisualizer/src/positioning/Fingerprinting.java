@@ -32,6 +32,22 @@ public class Fingerprinting
          fingerprinting_point_list.remove(0);
       }//for
       Logger.getLogger(SQLLiteConnection.class.getName()).log(Level.INFO, "Total num of points to choose from: " + fingerprinting_point_list.size());
-      return return_point;
+      return chooseBestPoint(fingerprinting_point_list);
    }//fingerprint
+
+   public static Point chooseBestPoint(ArrayList<FingerprintingPoint> fingerprintList)
+   {
+      int best_point_index = 0;
+      double initial_average_diff = fingerprintList.get(0).getAverageSignalDiff();
+      int index_counter = 0;
+      for (FingerprintingPoint f_point : fingerprintList)
+      {
+         if (f_point.getAverageSignalDiff() < initial_average_diff)
+         {
+            best_point_index = index_counter;
+         }//if
+         ++index_counter;
+      }//for
+      return fingerprintList.get(best_point_index).getCoordinates();
+   }//chooseBestPoint
 }//Fingerprinting
