@@ -8,6 +8,7 @@ package wifidatavisualizer;
 import java.awt.AWTEvent;
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -17,7 +18,6 @@ import java.awt.geom.Ellipse2D;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -47,6 +47,7 @@ public class MapDisplayPanel
    private Point mCalibrationStartPoint = new Point(500, 500);
    private Ellipse2D mBoundsCheckOval = null;
    JFrame mParentFrame;
+   int mNumberOfPointsToDisplay = 0;
 
    public MapDisplayPanel(ArrayList<Point> trainingDataPointList, ArrayList<Point> routerPointList, ArrayList<String> routerResourcePath)
    {
@@ -168,12 +169,23 @@ public class MapDisplayPanel
          }//switch
          if (points_to_draw != null && points_to_draw.size() > 0)
          {
+            int point_counter = 0;
             for (Point p : points_to_draw)
             {
-               graphics_2d_utility.fillOval(p.x - 4, p.y - 4, 8, 8);
-               this.mBoundsCheckOval = new Ellipse2D.Double(p.x - 125, p.y - 125, 250, 250);
-               graphics_2d_utility.setStroke(new BasicStroke(5));
-               graphics_2d_utility.draw(mBoundsCheckOval);
+               ++point_counter;
+               if (point_counter < mNumberOfPointsToDisplay)
+               {
+                  graphics_2d_utility.fillOval(p.x - 16, p.y - 16, 32, 32);
+                  this.mBoundsCheckOval = new Ellipse2D.Double(p.x - 125, p.y - 125, 250, 250);
+                  if (points_to_draw.size() == point_counter)
+                  {
+                     graphics_2d_utility.setStroke(new BasicStroke(5));
+                     graphics_2d_utility.draw(mBoundsCheckOval);
+                  }//if
+                  Font f = new Font("Dialog", Font.BOLD, 24);
+                  graphics_2d_utility.setFont(f);
+                  graphics_2d_utility.drawString(String.valueOf(point_counter), p.x, p.y - 10);
+               }//if
             }//for
          }//if
       }//for
@@ -247,7 +259,26 @@ public class MapDisplayPanel
    @Override
    public void newWifiData(Point newWifiPoint, NewWifiDataListener.WifiDataType dataType)
    {
-      int test = 1;
+      ArrayList<Point> point_list = this.mMapPointsOfInterestList.get(dataType);
+      if (point_list == null)
+      {
+         point_list = new ArrayList<Point>();
+      }//if
+      point_list.add(newWifiPoint);
+      if (this.mNumberOfPointsToDisplay == 0)
+      {
+         this.mNumberOfPointsToDisplay = point_list.size();
+      }//if
+      this.mMapPointsOfInterestList.put(dataType, point_list);
       //mMapPointsOfInterestList.p
-   }
+   }//newWifiData
+
+   @Override
+   public void displayLastNPoints(int nPoints)
+   {
+      if (nPoints != 0)
+      {
+         this.mNumberOfPointsToDisplay = nPoints;
+      }//if
+   }//displayLastNPoints
 }//MapDisplayPanel

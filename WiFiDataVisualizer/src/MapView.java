@@ -1,38 +1,21 @@
 
-import com.sun.istack.internal.logging.Logger;
 import database.SQLLiteConnection;
 import java.awt.Component;
-import java.awt.Graphics;
 import java.awt.GridBagLayout;
-import java.awt.Image;
-import java.awt.Insets;
-import java.awt.List;
 import java.awt.Point;
-import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.logging.Level;
-import javax.annotation.Resource;
-import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
+import java.util.logging.Logger;
 import javax.swing.JLabel;
 import javax.swing.JLayer;
 import javax.swing.JLayeredPane;
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
-import javax.swing.plaf.LayerUI;
 import org.apache.commons.csv.CSVRecord;
 import positioning.AccessPoint;
 import positioning.Fingerprinting;
@@ -71,6 +54,7 @@ public class MapView
    String mCsvInputFilePathPrefix = "";
    ArrayList<Point> mRouterPointList;
    ArrayList<NewWifiDataListener> mWifiDataListeners;
+   int mSliderValue = 0;
 
    /**
     * Creates new form MapView
@@ -107,15 +91,22 @@ public class MapView
 
    public void newWifiData(Point newData, NewWifiDataListener.WifiDataType dataType)
    {
-      System.out.println("Hello!!");
-
       // Notify everybody that may be interested.
       for (NewWifiDataListener hl : mWifiDataListeners)
       {
          hl.newWifiData(newData, dataType);
-         this.repaint();
       }//for
    }//newWifiData
+
+   public void displayNPoints(int sliderValue)
+   {
+      // Notify everybody that may be interested.
+      for (NewWifiDataListener wifi : mWifiDataListeners)
+      {
+         wifi.displayLastNPoints(sliderValue);
+         this.repaint();
+      }//for
+   }
 
    private void testLayer()
    {
@@ -180,10 +171,16 @@ public class MapView
    private void initComponents()
    {
 
+      jPanel1 = new javax.swing.JPanel();
+      jSlider1 = new javax.swing.JSlider();
       jMenuBar1 = new javax.swing.JMenuBar();
       jMenu1 = new javax.swing.JMenu();
       mSelectMapViewItem = new javax.swing.JMenuItem();
       jMenuItem1 = new javax.swing.JMenuItem();
+      jMenu2 = new javax.swing.JMenu();
+      triangulationMenuItem = new javax.swing.JCheckBoxMenuItem();
+      trilaterationMenuItem = new javax.swing.JCheckBoxMenuItem();
+      fingerprintingMenuItem3 = new javax.swing.JCheckBoxMenuItem();
 
       setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
       setTitle("Wifi Data Visualizer");
@@ -195,6 +192,38 @@ public class MapView
             formWindowClosed(evt);
          }
       });
+
+      jSlider1.setMajorTickSpacing(2);
+      jSlider1.setMinorTickSpacing(1);
+      jSlider1.setOrientation(javax.swing.JSlider.VERTICAL);
+      jSlider1.setPaintLabels(true);
+      jSlider1.setPaintTicks(true);
+      jSlider1.setSnapToTicks(true);
+      jSlider1.setInverted(true);
+      jSlider1.addChangeListener(new javax.swing.event.ChangeListener()
+      {
+         public void stateChanged(javax.swing.event.ChangeEvent evt)
+         {
+            jSlider1StateChanged(evt);
+         }
+      });
+
+      javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+      jPanel1.setLayout(jPanel1Layout);
+      jPanel1Layout.setHorizontalGroup(
+         jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+         .addGroup(jPanel1Layout.createSequentialGroup()
+            .addContainerGap()
+            .addComponent(jSlider1, javax.swing.GroupLayout.PREFERRED_SIZE, 62, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addContainerGap(88, Short.MAX_VALUE))
+      );
+      jPanel1Layout.setVerticalGroup(
+         jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+            .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jSlider1, javax.swing.GroupLayout.PREFERRED_SIZE, 726, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addContainerGap())
+      );
 
       jMenu1.setText("File");
 
@@ -233,17 +262,59 @@ public class MapView
 
       jMenuBar1.add(jMenu1);
 
+      jMenu2.setText("Algorithm");
+
+      triangulationMenuItem.setText("Triangulation");
+      triangulationMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/triangulation.png"))); // NOI18N
+      triangulationMenuItem.addActionListener(new java.awt.event.ActionListener()
+      {
+         public void actionPerformed(java.awt.event.ActionEvent evt)
+         {
+            triangulationMenuItemActionPerformed(evt);
+         }
+      });
+      jMenu2.add(triangulationMenuItem);
+
+      trilaterationMenuItem.setText("Trilateration");
+      trilaterationMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/trilateration.png"))); // NOI18N
+      trilaterationMenuItem.addActionListener(new java.awt.event.ActionListener()
+      {
+         public void actionPerformed(java.awt.event.ActionEvent evt)
+         {
+            trilaterationMenuItemActionPerformed(evt);
+         }
+      });
+      jMenu2.add(trilaterationMenuItem);
+
+      fingerprintingMenuItem3.setSelected(true);
+      fingerprintingMenuItem3.setText("Fingerprinting");
+      fingerprintingMenuItem3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/fingerprinting.png"))); // NOI18N
+      fingerprintingMenuItem3.addActionListener(new java.awt.event.ActionListener()
+      {
+         public void actionPerformed(java.awt.event.ActionEvent evt)
+         {
+            fingerprintingMenuItem3ActionPerformed(evt);
+         }
+      });
+      jMenu2.add(fingerprintingMenuItem3);
+
+      jMenuBar1.add(jMenu2);
+
       setJMenuBar(jMenuBar1);
 
       javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
       getContentPane().setLayout(layout);
       layout.setHorizontalGroup(
          layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-         .addGap(0, 1400, Short.MAX_VALUE)
+         .addGroup(layout.createSequentialGroup()
+            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGap(0, 1048, Short.MAX_VALUE))
       );
       layout.setVerticalGroup(
          layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-         .addGap(0, 929, Short.MAX_VALUE)
+         .addGroup(layout.createSequentialGroup()
+            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
       );
 
       pack();
@@ -278,17 +349,74 @@ public class MapView
             mSubmapArrayList.add(mRouter1TimestampRSSPairs.subMap(timestamp_reference - 500, timestamp_reference + 500));
             mSubmapArrayList.add(mRouter2TimestampRSSPairs.subMap(timestamp_reference - 500, timestamp_reference + 500));
             mSubmapArrayList.add(mRouter3TimestampRSSPairs.subMap(timestamp_reference - 500, timestamp_reference + 500));
-
             makeApproximation(mSubmapArrayList);
          }//for
+         this.repaint();
+
       }//if
    }//GEN-LAST:event_jMenuItem1ActionPerformed
 
    private void mSelectMapViewItemActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mSelectMapViewItemActionPerformed
    {//GEN-HEADEREND:event_mSelectMapViewItemActionPerformed
-      // TODO add your handling code here:
-      this.newWifiData(new Point(300, 300), NewWifiDataListener.WifiDataType.TRILATERATION);
+      // THis is a test for adding the new wifi data
+      //this.newWifiData(new Point(300, 300), NewWifiDataListener.WifiDataType.TRILATERATION);
    }//GEN-LAST:event_mSelectMapViewItemActionPerformed
+
+   private void fingerprintingMenuItem3ActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_fingerprintingMenuItem3ActionPerformed
+   {//GEN-HEADEREND:event_fingerprintingMenuItem3ActionPerformed
+      // TODO add your handling code here:
+      if (fingerprintingMenuItem3.isSelected())
+      {
+         triangulationMenuItem.setSelected(false);
+         trilaterationMenuItem.setSelected(false);
+      }//if
+      else
+      {
+         fingerprintingMenuItem3.setSelected(true);
+      }
+   }//GEN-LAST:event_fingerprintingMenuItem3ActionPerformed
+
+   private void triangulationMenuItemActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_triangulationMenuItemActionPerformed
+   {//GEN-HEADEREND:event_triangulationMenuItemActionPerformed
+      // TODO add your handling code here:
+      if (triangulationMenuItem.isSelected())
+      {
+         fingerprintingMenuItem3.setSelected(false);
+         trilaterationMenuItem.setSelected(false);
+      }//if
+      else
+      {
+         triangulationMenuItem.setSelected(true);
+      }
+   }//GEN-LAST:event_triangulationMenuItemActionPerformed
+
+   private void trilaterationMenuItemActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_trilaterationMenuItemActionPerformed
+   {//GEN-HEADEREND:event_trilaterationMenuItemActionPerformed
+      // TODO add your handling code here:
+      if (trilaterationMenuItem.isSelected())
+      {
+         fingerprintingMenuItem3.setSelected(false);
+         triangulationMenuItem.setSelected(false);
+      }//if
+      else
+      {
+         trilaterationMenuItem.setSelected(true);
+      }
+   }//GEN-LAST:event_trilaterationMenuItemActionPerformed
+
+   private void jSlider1StateChanged(javax.swing.event.ChangeEvent evt)//GEN-FIRST:event_jSlider1StateChanged
+   {//GEN-HEADEREND:event_jSlider1StateChanged
+      // TODO add your handling code here:
+      int slider_value = this.jSlider1.getValue();
+      if (slider_value != mSliderValue)
+      {
+         mSliderValue = slider_value;
+         this.displayNPoints(mSliderValue);
+         this.repaint();
+      }//if
+      java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "*********Slider Stuff********");
+
+   }//GEN-LAST:event_jSlider1StateChanged
 
    private void printSubMap(SortedMap<Integer, Integer> submap, int index)
    {
@@ -319,12 +447,29 @@ public class MapView
       getThreeBestRouters(access_point_list);
       if (access_point_list.size() == 3)
       {
-         Point resultingPoint = Triangulation.triangulate(access_point_list);
-         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Triangulation Point: {0}", resultingPoint.toString());
-         Point resultingPoint2 = Trilateration.findCenterPoint(access_point_list);
-         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Trilateration Point: {0}", resultingPoint2.toString());
-         Point resultingPoint3 = Fingerprinting.fingerprint(access_point_list, this.mSqlLiteConnection);
-         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Fingerprinting Point: {0}", resultingPoint3.toString());
+
+         if (triangulationMenuItem.isSelected())
+         {
+            Point resultingPoint = Triangulation.triangulate(access_point_list);
+            this.newWifiData(resultingPoint, NewWifiDataListener.WifiDataType.TRIANGULATION);
+            java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Triangulation Point: {0}", resultingPoint.toString());
+         }//if
+         else if (trilaterationMenuItem.isSelected())
+         {
+            Point resultingPoint2 = Trilateration.findCenterPoint(access_point_list);
+            this.newWifiData(resultingPoint2, NewWifiDataListener.WifiDataType.TRILATERATION);
+            java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Trilateration Point: {0}", resultingPoint2.toString());
+         }//else if
+         else if (fingerprintingMenuItem3.isSelected())
+         {
+            Point resultingPoint3 = Fingerprinting.fingerprint(access_point_list, this.mSqlLiteConnection);
+            this.newWifiData(resultingPoint3, NewWifiDataListener.WifiDataType.FINGERPRINTING);
+            java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Fingerprinting Point: {0}", resultingPoint3.toString());
+         }//else if
+         else
+         {
+
+         }//else
       }//if
    }//makeApproximation
 
@@ -393,9 +538,15 @@ public class MapView
    }//main
 
    // Variables declaration - do not modify//GEN-BEGIN:variables
+   private javax.swing.JCheckBoxMenuItem fingerprintingMenuItem3;
    private javax.swing.JMenu jMenu1;
+   private javax.swing.JMenu jMenu2;
    private javax.swing.JMenuBar jMenuBar1;
    private javax.swing.JMenuItem jMenuItem1;
+   private javax.swing.JPanel jPanel1;
+   private javax.swing.JSlider jSlider1;
    private javax.swing.JMenuItem mSelectMapViewItem;
+   private javax.swing.JCheckBoxMenuItem triangulationMenuItem;
+   private javax.swing.JCheckBoxMenuItem trilaterationMenuItem;
    // End of variables declaration//GEN-END:variables
 }//MapView
