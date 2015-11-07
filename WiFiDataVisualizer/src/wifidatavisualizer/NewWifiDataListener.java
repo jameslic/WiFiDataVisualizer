@@ -16,7 +16,7 @@ public interface NewWifiDataListener
 {
    public void newWifiData(Point newWifiPoint, WifiDataType dataType);
 
-   public void displayLastNPoints(int nPoints);
+   public int displayLastNPoints(int nPoints, WifiDataType dataType);
 
    enum WifiDataType
    {

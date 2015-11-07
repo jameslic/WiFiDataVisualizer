@@ -274,11 +274,17 @@ public class MapDisplayPanel
    }//newWifiData
 
    @Override
-   public void displayLastNPoints(int nPoints)
+   public int displayLastNPoints(int nPoints, NewWifiDataListener.WifiDataType dataType)
    {
+      int total_points_available = 0;
       if (nPoints != 0)
       {
          this.mNumberOfPointsToDisplay = nPoints;
       }//if
+      if (this.mMapPointsOfInterestList.get(dataType) != null)
+      {
+         total_points_available = this.mMapPointsOfInterestList.get(dataType).size();
+      }//if
+      return total_points_available;
    }//displayLastNPoints
 }//MapDisplayPanel

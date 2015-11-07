@@ -3,6 +3,8 @@ import database.SQLLiteConnection;
 import java.awt.Component;
 import java.awt.GridBagLayout;
 import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
 import java.util.ArrayList;
@@ -16,6 +18,7 @@ import java.util.logging.Logger;
 import javax.swing.JLabel;
 import javax.swing.JLayer;
 import javax.swing.JLayeredPane;
+import javax.swing.Timer;
 import org.apache.commons.csv.CSVRecord;
 import positioning.AccessPoint;
 import positioning.Fingerprinting;
@@ -36,6 +39,7 @@ import wifidatavisualizer.NewWifiDataListener;
  */
 public class MapView
         extends javax.swing.JFrame
+        implements ActionListener
 {
 
    final public static String ROUTER_PREFIX_SSID = "CiscoLinksysE120";
@@ -55,6 +59,8 @@ public class MapView
    ArrayList<Point> mRouterPointList;
    ArrayList<NewWifiDataListener> mWifiDataListeners;
    int mSliderValue = 0;
+   Timer mPlaybackTimer;
+   int mTotalNumberOfDataPoints = 0;
 
    /**
     * Creates new form MapView
@@ -63,7 +69,9 @@ public class MapView
    {
       this.mWifiDataListeners = new ArrayList<>();
       initComponents();
-      this.mSliderValue = this.jSlider1.getValue();
+      this.mStopPlaybackButton.setEnabled(false);
+
+      this.mSliderValue = this.mNumberOfDataPointsSlider.getValue();
       this.setLayout(new GridBagLayout());
       ArrayList<String> router_resource_path = new ArrayList<>();
       for (int i = 0; i < 4; ++i)
@@ -102,9 +110,26 @@ public class MapView
    public void displayNPoints(int sliderValue)
    {
       // Notify everybody that may be interested.
+      NewWifiDataListener.WifiDataType data_type = NewWifiDataListener.WifiDataType.DEFAULT;
+      if (this.triangulationMenuItem.isSelected())
+      {
+         data_type = NewWifiDataListener.WifiDataType.TRIANGULATION;
+      }//if
+      else if (this.trilaterationMenuItem.isSelected())
+      {
+         data_type = NewWifiDataListener.WifiDataType.TRILATERATION;
+      }
+      else if (this.fingerprintingMenuItem3.isSelected())
+      {
+         data_type = NewWifiDataListener.WifiDataType.FINGERPRINTING;
+      }
+      else
+      {
+
+      }//else
       for (NewWifiDataListener wifi : mWifiDataListeners)
       {
-         wifi.displayLastNPoints(sliderValue);
+         mTotalNumberOfDataPoints = wifi.displayLastNPoints(sliderValue, data_type);
          this.repaint();
       }//for
    }
@@ -173,12 +198,17 @@ public class MapView
    {
 
       jPanel1 = new javax.swing.JPanel();
-      jSlider1 = new javax.swing.JSlider();
+      mNumberOfDataPointsSlider = new javax.swing.JSlider();
       jPanel2 = new javax.swing.JPanel();
       jLabel3 = new javax.swing.JLabel();
       jLabel4 = new javax.swing.JLabel();
       jLabel1 = new javax.swing.JLabel();
       jLabel2 = new javax.swing.JLabel();
+      jPanel3 = new javax.swing.JPanel();
+      mStopPlaybackButton = new javax.swing.JButton();
+      mPlaybackDataButton = new javax.swing.JButton();
+      mPlaybackSpeedSecondsChooser = new javax.swing.JComboBox();
+      jLabel5 = new javax.swing.JLabel();
       jMenuBar1 = new javax.swing.JMenuBar();
       jMenu1 = new javax.swing.JMenu();
       mSelectMapViewItem = new javax.swing.JMenuItem();
@@ -199,18 +229,19 @@ public class MapView
          }
       });
 
-      jSlider1.setMajorTickSpacing(2);
-      jSlider1.setMinorTickSpacing(1);
-      jSlider1.setOrientation(javax.swing.JSlider.VERTICAL);
-      jSlider1.setPaintLabels(true);
-      jSlider1.setPaintTicks(true);
-      jSlider1.setSnapToTicks(true);
-      jSlider1.setInverted(true);
-      jSlider1.addChangeListener(new javax.swing.event.ChangeListener()
+      mNumberOfDataPointsSlider.setMajorTickSpacing(2);
+      mNumberOfDataPointsSlider.setMinorTickSpacing(1);
+      mNumberOfDataPointsSlider.setOrientation(javax.swing.JSlider.VERTICAL);
+      mNumberOfDataPointsSlider.setPaintLabels(true);
+      mNumberOfDataPointsSlider.setPaintTicks(true);
+      mNumberOfDataPointsSlider.setSnapToTicks(true);
+      mNumberOfDataPointsSlider.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "# Data Points", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Tahoma", 1, 13))); // NOI18N
+      mNumberOfDataPointsSlider.setInverted(true);
+      mNumberOfDataPointsSlider.addChangeListener(new javax.swing.event.ChangeListener()
       {
          public void stateChanged(javax.swing.event.ChangeEvent evt)
          {
-            jSlider1StateChanged(evt);
+            mNumberOfDataPointsSliderStateChanged(evt);
          }
       });
 
@@ -260,27 +291,93 @@ public class MapView
             .addContainerGap())
       );
 
+      jPanel3.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Playback Controls", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Tahoma", 1, 13))); // NOI18N
+
+      mStopPlaybackButton.setText("Stop");
+      mStopPlaybackButton.addActionListener(new java.awt.event.ActionListener()
+      {
+         public void actionPerformed(java.awt.event.ActionEvent evt)
+         {
+            mStopPlaybackButtonActionPerformed(evt);
+         }
+      });
+
+      mPlaybackDataButton.setText("Playback");
+      mPlaybackDataButton.addActionListener(new java.awt.event.ActionListener()
+      {
+         public void actionPerformed(java.awt.event.ActionEvent evt)
+         {
+            mPlaybackDataButtonActionPerformed(evt);
+         }
+      });
+
+      mPlaybackSpeedSecondsChooser.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "1", "2", "3", "4", "5" }));
+      mPlaybackSpeedSecondsChooser.setToolTipText("Playback speed in seconds");
+
+      jLabel5.setText("Speed (s)");
+
+      javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+      jPanel3.setLayout(jPanel3Layout);
+      jPanel3Layout.setHorizontalGroup(
+         jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+         .addGroup(jPanel3Layout.createSequentialGroup()
+            .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+               .addGroup(jPanel3Layout.createSequentialGroup()
+                  .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                     .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(34, 34, 34)
+                        .addComponent(mStopPlaybackButton))
+                     .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(22, 22, 22)
+                        .addComponent(mPlaybackDataButton)))
+                  .addGap(0, 0, Short.MAX_VALUE))
+               .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                  .addGap(0, 0, Short.MAX_VALUE)
+                  .addComponent(jLabel5)
+                  .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                  .addComponent(mPlaybackSpeedSecondsChooser, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+            .addContainerGap())
+      );
+      jPanel3Layout.setVerticalGroup(
+         jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+            .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+               .addComponent(mPlaybackSpeedSecondsChooser, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+               .addComponent(jLabel5))
+            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 8, Short.MAX_VALUE)
+            .addComponent(mPlaybackDataButton)
+            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+            .addComponent(mStopPlaybackButton)
+            .addContainerGap())
+      );
+
       javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
       jPanel1.setLayout(jPanel1Layout);
       jPanel1Layout.setHorizontalGroup(
          jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
          .addGroup(jPanel1Layout.createSequentialGroup()
-            .addContainerGap()
-            .addComponent(jSlider1, javax.swing.GroupLayout.PREFERRED_SIZE, 62, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGap(7, 7, 7)
+            .addComponent(mNumberOfDataPointsSlider, javax.swing.GroupLayout.PREFERRED_SIZE, 106, javax.swing.GroupLayout.PREFERRED_SIZE)
             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-            .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addContainerGap(38, Short.MAX_VALUE))
+            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+               .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+               .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addContainerGap(56, Short.MAX_VALUE))
       );
       jPanel1Layout.setVerticalGroup(
          jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-            .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-            .addComponent(jSlider1, javax.swing.GroupLayout.PREFERRED_SIZE, 726, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addContainerGap())
          .addGroup(jPanel1Layout.createSequentialGroup()
-            .addGap(22, 22, 22)
-            .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+               .addGroup(jPanel1Layout.createSequentialGroup()
+                  .addGap(58, 58, 58)
+                  .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                  .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                  .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                  .addGap(0, 451, Short.MAX_VALUE))
+               .addGroup(jPanel1Layout.createSequentialGroup()
+                  .addContainerGap()
+                  .addComponent(mNumberOfDataPointsSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+            .addContainerGap())
       );
 
       jMenu1.setText("File");
@@ -308,7 +405,7 @@ public class MapView
       });
       jMenu1.add(mSelectMapViewItem);
 
-      jMenuItem1.setText("Play");
+      jMenuItem1.setText("Load Wifi Data");
       jMenuItem1.addActionListener(new java.awt.event.ActionListener()
       {
          public void actionPerformed(java.awt.event.ActionEvent evt)
@@ -366,7 +463,7 @@ public class MapView
          layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
          .addGroup(layout.createSequentialGroup()
             .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addGap(0, 963, Short.MAX_VALUE))
+            .addGap(0, 909, Short.MAX_VALUE))
       );
       layout.setVerticalGroup(
          layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -462,10 +559,10 @@ public class MapView
       }
    }//GEN-LAST:event_trilaterationMenuItemActionPerformed
 
-   private void jSlider1StateChanged(javax.swing.event.ChangeEvent evt)//GEN-FIRST:event_jSlider1StateChanged
-   {//GEN-HEADEREND:event_jSlider1StateChanged
+   private void mNumberOfDataPointsSliderStateChanged(javax.swing.event.ChangeEvent evt)//GEN-FIRST:event_mNumberOfDataPointsSliderStateChanged
+   {//GEN-HEADEREND:event_mNumberOfDataPointsSliderStateChanged
       // TODO add your handling code here:
-      int slider_value = this.jSlider1.getValue();
+      int slider_value = this.mNumberOfDataPointsSlider.getValue();
       if (slider_value != mSliderValue)
       {
          mSliderValue = slider_value;
@@ -474,7 +571,26 @@ public class MapView
       }//if
       java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "*********Slider Stuff********");
 
-   }//GEN-LAST:event_jSlider1StateChanged
+   }//GEN-LAST:event_mNumberOfDataPointsSliderStateChanged
+
+   private void mPlaybackDataButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mPlaybackDataButtonActionPerformed
+   {//GEN-HEADEREND:event_mPlaybackDataButtonActionPerformed
+      // TODO add your handling code here:
+      this.mStopPlaybackButton.setEnabled(true);
+      this.mPlaybackDataButton.setEnabled(false);
+      this.mSliderValue = 0;
+      this.mNumberOfDataPointsSlider.setValue(mSliderValue);
+      mPlaybackTimer = new Timer((this.mPlaybackSpeedSecondsChooser.getSelectedIndex() + 1) * 1000, this);
+      mPlaybackTimer.start();
+   }//GEN-LAST:event_mPlaybackDataButtonActionPerformed
+
+   private void mStopPlaybackButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mStopPlaybackButtonActionPerformed
+   {//GEN-HEADEREND:event_mStopPlaybackButtonActionPerformed
+      // TODO add your handling code here:
+      this.mPlaybackTimer.stop();
+      this.mPlaybackDataButton.setEnabled(true);
+      this.mStopPlaybackButton.setEnabled(false);
+   }//GEN-LAST:event_mStopPlaybackButtonActionPerformed
 
    private void printSubMap(SortedMap<Integer, Integer> submap, int index)
    {
@@ -601,15 +717,36 @@ public class MapView
    private javax.swing.JLabel jLabel2;
    private javax.swing.JLabel jLabel3;
    private javax.swing.JLabel jLabel4;
+   private javax.swing.JLabel jLabel5;
    private javax.swing.JMenu jMenu1;
    private javax.swing.JMenu jMenu2;
    private javax.swing.JMenuBar jMenuBar1;
    private javax.swing.JMenuItem jMenuItem1;
    private javax.swing.JPanel jPanel1;
    private javax.swing.JPanel jPanel2;
-   private javax.swing.JSlider jSlider1;
+   private javax.swing.JPanel jPanel3;
+   private javax.swing.JSlider mNumberOfDataPointsSlider;
+   private javax.swing.JButton mPlaybackDataButton;
+   private javax.swing.JComboBox mPlaybackSpeedSecondsChooser;
    private javax.swing.JMenuItem mSelectMapViewItem;
+   private javax.swing.JButton mStopPlaybackButton;
    private javax.swing.JCheckBoxMenuItem triangulationMenuItem;
    private javax.swing.JCheckBoxMenuItem trilaterationMenuItem;
    // End of variables declaration//GEN-END:variables
+
+   @Override
+   public void actionPerformed(ActionEvent e)
+   {
+      ++mSliderValue;
+      if (this.mSliderValue < mTotalNumberOfDataPoints)
+      {
+         this.mNumberOfDataPointsSlider.setValue(mSliderValue);
+         this.displayNPoints(mSliderValue);
+         this.repaint();
+      }//if
+      else
+      {
+         this.mPlaybackTimer.stop();
+      }//else
+   }//actionPerformed
 }//MapView
