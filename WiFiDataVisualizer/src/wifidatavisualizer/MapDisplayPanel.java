@@ -31,7 +31,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.plaf.LayerUI;
 
 /**
- *
+ * Displays the algorithm visualizations
  * @author James Licata
  */
 public class MapDisplayPanel
