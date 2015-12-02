@@ -175,7 +175,7 @@ public class MapDisplayPanel
                ++point_counter;
                if (point_counter < mNumberOfPointsToDisplay)
                {
-                  graphics_2d_utility.fillOval(p.x - 16, p.y - 16, 32, 32);
+                  graphics_2d_utility.fillOval(p.x - 12, p.y - 12, 24, 24);
                   this.mBoundsCheckOval = new Ellipse2D.Double(p.x - 125, p.y - 125, 250, 250);
                   if (points_to_draw.size() == point_counter)
                   {
