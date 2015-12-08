@@ -1,7 +1,5 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Class that manages connections and actions to a SQL Lite database
  */
 package database;
 
@@ -14,13 +12,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import positioning.AccessPoint;
 import positioning.FingerprintingPoint;
 
 /**
+ * Class that manages connections and actions to a SQL Lite database
  *
  * @author James Licata
  */
@@ -30,6 +28,9 @@ public class SQLLiteConnection
    boolean mDatabaseConnected = false;
    String mDatabaseName = "";
 
+   /**
+    * Default constructor
+    */
    public SQLLiteConnection()
    {
       try
@@ -44,7 +45,8 @@ public class SQLLiteConnection
 
    /**
     *
-    * @param databaseUrl
+    * @param databaseUrl  the url of the database to connect to
+    * @param databaseName name of the database
     */
    public boolean connect(String databaseUrl, String databaseName)
    {
@@ -69,11 +71,20 @@ public class SQLLiteConnection
       return mDatabaseConnected;
    }//connect
 
+   /**
+    * Returns status of database connection
+    *
+    * @return boolean indicating status of connection (true=connected, false=no
+    *         connection)
+    */
    public boolean isDatabaseConnected()
    {
       return mDatabaseConnected;
-   }
+   }//isDatabaseConnected
 
+   /**
+    * Closes the connection to the SQL Connection
+    */
    public void closeDatabase()
    {
       try
@@ -87,6 +98,12 @@ public class SQLLiteConnection
       }//catch
    }//closeDatabase
 
+   /**
+    * Function to load the training data points from the database
+    *
+    * @return a list of all the training data point locations contained in the
+    *         database
+    */
    public ArrayList<Point> loadTrainingPointLocations()
    {
       ArrayList<Point> training_point_location_list = new ArrayList<>();
@@ -133,6 +150,11 @@ public class SQLLiteConnection
       return training_point_location_list;
    }//loadTrainingPointLocations
 
+   /**
+    * Function to load the router point locations from the database
+    *
+    * @return list containing the locations of the routers from the database
+    */
    public ArrayList<Point> loadRouterPointLocations()
    {
       ArrayList<Point> router_point_location_list = new ArrayList<>();
@@ -182,6 +204,13 @@ public class SQLLiteConnection
       return router_point_location_list;
    }//loadRouterPointLocations
 
+   /**
+    * Function to retrieve the likeliest fingerprinting points from the database
+    *
+    * @param accessPointList input access point list
+    * @return Map returning the most likely points for the fingerprinting
+    *         algorithm between a bounded RSS range
+    */
    public HashMap<String, FingerprintingPoint> getLikeliestPoints(ArrayList<AccessPoint> accessPointList)
    {
       ArrayList<String> possible_office_list = new ArrayList<>();
@@ -245,6 +274,14 @@ public class SQLLiteConnection
       return getPointsFromOfficeList(possible_office_list, possible_office_signal_list_diff, originating_ssid);
    }//getLikeliestPoints
 
+   /**
+    * Function returning the relative X,Y points from the input data
+    *
+    * @param officeIdList          List of office String identifiers
+    * @param officeSignalLevelDiff List of office signal differentials
+    * @param originatingSSID       list of the router SSID
+    * @return map o
+    */
    private HashMap<String, FingerprintingPoint> getPointsFromOfficeList(ArrayList<String> officeIdList,
            ArrayList<Integer> officeSignalLevelDiff, ArrayList<String> originatingSSID)
    {
