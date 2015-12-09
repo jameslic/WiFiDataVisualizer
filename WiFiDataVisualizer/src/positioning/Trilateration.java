@@ -69,17 +69,17 @@ public class Trilateration
       return resultant_point;
    }//findCenter
 
-   public static Point findCenterPoint(ArrayList<AccessPoint> accessPointList)
+   public static Point findCenterPoint(ArrayList<AccessPointObservationRecord> accessPointList)
    {
       double top = 0;
       double bot = 0;
       for (int i = 0; i < 3; i++)
       {
-         AccessPoint c = accessPointList.get(i);
-         double c_radius = c.getDistance();
+         AccessPointObservationRecord c = accessPointList.get(i);
+         double c_radius = c.getDistancePixels();
          double c2_radius = 0;
          double c3_radius = 0;
-         AccessPoint c2, c3;
+         AccessPointObservationRecord c2, c3;
          if (i == 0)
          {
             c2 = accessPointList.get(1);
@@ -96,8 +96,8 @@ public class Trilateration
             c3 = accessPointList.get(1);
          }//else
 
-         c2_radius = c2.getDistance();
-         c3_radius = c3.getDistance();
+         c2_radius = c2.getDistancePixels();
+         c3_radius = c3.getDistancePixels();
 
          double d = c2.getCoordinates().getX() - c3.getCoordinates().getX();
 
@@ -109,10 +109,10 @@ public class Trilateration
       }//for
 
       double y = top / (2 * bot);
-      AccessPoint c1 = accessPointList.get(0);
-      AccessPoint c2 = accessPointList.get(1);
-      double c1_radius = c1.getDistance();
-      double c2_radius = c2.getDistance();
+      AccessPointObservationRecord c1 = accessPointList.get(0);
+      AccessPointObservationRecord c2 = accessPointList.get(1);
+      double c1_radius = c1.getDistancePixels();
+      double c2_radius = c2.getDistancePixels();
       top = c2_radius * c2_radius + c1.getCoordinates().getX() * c1.getCoordinates().getX() + c1.getCoordinates().getY() * c1.getCoordinates().getY() - c1_radius * c1_radius - c2.getCoordinates().getX() * c2.getCoordinates().getX() - c2.getCoordinates().getY() * c2.getCoordinates().getY() - 2 * (c1.getCoordinates().getY() - c2.getCoordinates().getY()) * y;
       bot = c1.getCoordinates().getX() - c2.getCoordinates().getX();
       double x = top / (2 * bot);

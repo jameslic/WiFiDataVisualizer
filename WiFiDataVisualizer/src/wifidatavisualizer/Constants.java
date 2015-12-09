@@ -19,6 +19,11 @@ public class Constants
    final public static int DEFAULT_CALIBRATION_START_POINT_X_COORDINATE = 500;
    final public static int DEFAULT_CALIBRATION_START_POINT_Y_COORDINATE = 500;
 
+   //Map conversions
+   final public static double PIXELS_PER_FOOT = 5.7;
+   final public static double FEET_PER_METER = 0.3048;
+   public static final int MIN_SIGNAL_LEVEL = Integer.MIN_VALUE;
+
    //CSV Data File Constants
    final public static String CSV_FILE_RECORD_TIMESTAMP_COLUMN = "Timestamp";
    final public static String CSV_FILE_RECORD_RSS_COLUMN = "RSS";

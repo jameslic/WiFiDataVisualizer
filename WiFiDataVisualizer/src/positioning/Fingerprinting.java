@@ -19,7 +19,7 @@ import java.util.logging.Logger;
  */
 public class Fingerprinting
 {
-   public static Point fingerprint(ArrayList<AccessPoint> accessPointList, SQLLiteConnection trainingDataBase)
+   public static Point fingerprint(ArrayList<AccessPointObservationRecord> accessPointList, SQLLiteConnection trainingDataBase)
    {
       Point return_point = new Point(0, 0);
       Collection<FingerprintingPoint> collection = trainingDataBase.getLikeliestPoints(accessPointList).values();

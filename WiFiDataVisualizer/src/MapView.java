@@ -21,7 +21,7 @@ import javax.swing.JLayer;
 import javax.swing.JLayeredPane;
 import javax.swing.Timer;
 import org.apache.commons.csv.CSVRecord;
-import positioning.AccessPoint;
+import positioning.AccessPointObservationRecord;
 import positioning.Fingerprinting;
 import positioning.Triangulation;
 import positioning.Trilateration;
@@ -683,20 +683,20 @@ public class MapView
     */
    private void makeApproximation(ArrayList<SortedMap<Integer, Integer>> accessPointArrayList)
    {
-      ArrayList<AccessPoint> access_point_list = new ArrayList<>();
+      ArrayList<AccessPointObservationRecord> access_point_list = new ArrayList<>();
       int active_router_index = 0;
       for (int i = 0; i < accessPointArrayList.size(); ++i)
       {
          if (accessPointArrayList.get(i).size() == 1 && mRouterPointList.size() == Constants.DEFAULT_NUMBER_OF_ROUTERS && accessPointArrayList.get(i).isEmpty() == false)
          {
-            access_point_list.add(new AccessPoint(accessPointArrayList.get(i).entrySet().iterator().next().getValue(), mRouterPointList.get(i), "CiscoLinksysE120" + i));
+            access_point_list.add(new AccessPointObservationRecord(accessPointArrayList.get(i).entrySet().iterator().next().getValue(), mRouterPointList.get(i), "CiscoLinksysE120" + i));
             java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "RSS: {0}", access_point_list.get(active_router_index).getSignalLevel());
             java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "SSID: {0}", access_point_list.get(active_router_index).getSSID());
             java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Point: {0}", access_point_list.get(active_router_index).getCoordinates());
             ++active_router_index;
          }//if
       }//for
-      ArrayList<AccessPoint> router_trio_list = getThreeBestRouters(access_point_list);
+      ArrayList<AccessPointObservationRecord> router_trio_list = getThreeBestRouters(access_point_list);
       if (router_trio_list.size() == 3)
       {
 
@@ -783,9 +783,9 @@ public class MapView
     * @param accessPointList list of all the access points
     * @return the list of the 3 best router candidates
     */
-   private ArrayList<AccessPoint> getThreeBestRouters(ArrayList<AccessPoint> accessPointList)
+   private ArrayList<AccessPointObservationRecord> getThreeBestRouters(ArrayList<AccessPointObservationRecord> accessPointList)
    {
-      ArrayList<AccessPoint> access_points_final_trio = new ArrayList<>();
+      ArrayList<AccessPointObservationRecord> access_points_final_trio = new ArrayList<>();
       for (int i = 0; i < accessPointList.size(); ++i)
       {
          access_points_final_trio.add(null);
@@ -795,9 +795,9 @@ public class MapView
       {
          int minIndex = access_points_final_trio.indexOf(Collections.min(access_points_final_trio));
          access_points_final_trio.remove(minIndex);
-         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Distance in pixels: {0}", access_points_final_trio.get(0).getDistance());
-         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Distance in pixels: {0}", access_points_final_trio.get(1).getDistance());
-         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Distance in pixels: {0}", access_points_final_trio.get(2).getDistance());
+         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Distance in pixels: {0}", access_points_final_trio.get(0).getDistancePixels());
+         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Distance in pixels: {0}", access_points_final_trio.get(1).getDistancePixels());
+         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Distance in pixels: {0}", access_points_final_trio.get(2).getDistancePixels());
       }//if
 
       return access_points_final_trio;

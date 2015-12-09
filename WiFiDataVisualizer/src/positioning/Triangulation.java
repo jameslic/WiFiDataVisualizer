@@ -14,22 +14,22 @@ import java.util.ArrayList;
  */
 public class Triangulation
 {
-   public static Point triangulate(ArrayList<AccessPoint> accessPointList)
+   public static Point triangulate(ArrayList<AccessPointObservationRecord> accessPointList)
    {
       Point resultant_point = new Point(0, 0);
       double A, B, C, D, E, F, DetX, DetY, Det;
       if (accessPointList.size() == 3)
       {
-         AccessPoint p1 = accessPointList.get(0);
-         AccessPoint p2 = accessPointList.get(1);
-         AccessPoint p3 = accessPointList.get(2);
+         AccessPointObservationRecord p1 = accessPointList.get(0);
+         AccessPointObservationRecord p2 = accessPointList.get(1);
+         AccessPointObservationRecord p3 = accessPointList.get(2);
          A = -2 * p1.getCoordinates().getX() + 2 * p2.getCoordinates().getX();
          B = -2 * p1.getCoordinates().getY() + 2 * p1.getCoordinates().getY();
          C = -2 * p2.getCoordinates().getX() + 2 * p3.getCoordinates().getX();
          D = -2 * p2.getCoordinates().getY() + 2 * p3.getCoordinates().getY();
-         E = Math.pow(p1.getDistance(), 2) - Math.pow(p2.getDistance(), 2) - Math.pow(p1.getCoordinates().getX(), 2)
+         E = Math.pow(p1.getDistancePixels(), 2) - Math.pow(p2.getDistancePixels(), 2) - Math.pow(p1.getCoordinates().getX(), 2)
                  + Math.pow(p2.getCoordinates().getX(), 2) - Math.pow(p1.getCoordinates().getY(), 2) + Math.pow(p2.getCoordinates().getY(), 2);
-         F = Math.pow(p2.getDistance(), 2) - Math.pow(p3.getDistance(), 2) - Math.pow(p2.getCoordinates().getX(), 2)
+         F = Math.pow(p2.getDistancePixels(), 2) - Math.pow(p3.getDistancePixels(), 2) - Math.pow(p2.getCoordinates().getX(), 2)
                  + Math.pow(p3.getCoordinates().getX(), 2) - Math.pow(p2.getCoordinates().getY(), 2) + Math.pow(p3.getCoordinates().getY(), 2);
          // Using Cramers Rule
          Det = A * D - B * C;

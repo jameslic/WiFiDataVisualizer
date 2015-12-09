@@ -14,8 +14,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import positioning.AccessPoint;
+import positioning.AccessPointObservationRecord;
 import positioning.FingerprintingPoint;
+import static java.lang.Math.abs;
+import static java.lang.Math.abs;
+import static java.lang.Math.abs;
 
 /**
  * Class that manages connections and actions to a SQL Lite database
@@ -211,14 +214,14 @@ public class SQLLiteConnection
     * @return Map returning the most likely points for the fingerprinting
     *         algorithm between a bounded RSS range
     */
-   public HashMap<String, FingerprintingPoint> getLikeliestPoints(ArrayList<AccessPoint> accessPointList)
+   public HashMap<String, FingerprintingPoint> getLikeliestPoints(ArrayList<AccessPointObservationRecord> accessPointList)
    {
       ArrayList<String> possible_office_list = new ArrayList<>();
       ArrayList<Integer> possible_office_signal_list_diff = new ArrayList<>();
       ArrayList<String> originating_ssid = new ArrayList<>();
       if (isDatabaseConnected())
       {
-         for (AccessPoint access_point : accessPointList)
+         for (AccessPointObservationRecord access_point : accessPointList)
          {
             int rss_lower_bound = abs(access_point.getSignalLevel() - 2);
             int rss_upper_bound = abs(access_point.getSignalLevel() + 2);
