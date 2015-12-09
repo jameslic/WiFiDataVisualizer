@@ -1,7 +1,5 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Class is an implementation of a "glass" panel in which items can be drawn ontop of an existing image
  */
 package wifidatavisualizer;
 
@@ -31,7 +29,10 @@ import javax.swing.SwingUtilities;
 import javax.swing.plaf.LayerUI;
 
 /**
- * Displays the algorithm visualizations
+ * Displays the algorithm visualizations overtop of a displayed image,
+ * such as range rings, position estimations, router placements, and training
+ * data points.
+ *
  * @author James Licata
  */
 public class MapDisplayPanel
@@ -41,17 +42,46 @@ public class MapDisplayPanel
    private final Map<NewWifiDataListener.WifiDataType, ArrayList<Point>> mMapPointsOfInterestList;
    private final ArrayList<Point> mRouterPointList;
    private final ArrayList<Image> mRouterImageList;
+   /**
+    * List of rectangles that represent the bounded area around routers
+    */
    private final ArrayList<Rectangle2D> mRouterImageBoundedRectangleList;
+   /**
+    * The training data point list
+    */
    private final ArrayList<Point> mTrainingDataPointList;
    public boolean mStartPointChosen = false;
-   private Point mCalibrationStartPoint = new Point(500, 500);
+   /**
+    * The default spot for the calibration starting point
+    */
+   private Point mCalibrationStartPoint = new Point(Constants.DEFAULT_CALIBRATION_START_POINT_X_COORDINATE,
+                                                    Constants.DEFAULT_CALIBRATION_START_POINT_Y_COORDINATE);
+   /**
+    * A bounds check oval member variable
+    */
    private Ellipse2D mBoundsCheckOval = null;
+   /**
+    * Member variable to store a parent JFrame
+    */
    JFrame mParentFrame;
+   /**
+    * The total number of point estimations to display -
+    * when controlled by DVR this is the threshold limiter
+    */
    int mNumberOfPointsToDisplay = 0;
 
+   /**
+    * Main constructor for creating the Map Display Panel
+    *
+    * @param trainingDataPointList list of training data points used as
+    *                              references for position estimation
+    * @param routerPointList       list of coordinates for the routers (access
+    *                              points) used to collect data
+    * @param routerResourcePath    the path to router image files
+    */
    public MapDisplayPanel(ArrayList<Point> trainingDataPointList, ArrayList<Point> routerPointList, ArrayList<String> routerResourcePath)
    {
-      mMapPointsOfInterestList = new WeakHashMap<>(25);
+      mMapPointsOfInterestList = new WeakHashMap<>();
       mRouterImageList = new ArrayList<>();
       mRouterPointList = routerPointList;
       mTrainingDataPointList = trainingDataPointList;
@@ -69,25 +99,41 @@ public class MapDisplayPanel
       }//catch
    }//MapDisplayPanel
 
+   /**
+    * Creates the glass layer and the event mask for mouse events
+    *
+    * @param inputLayer the layer to install glass over
+    */
    @Override
-   public void installUI(JComponent c)
+   public void installUI(JComponent inputLayer)
    {
       System.out.println("install");
-      super.installUI(c);
-      JLayer layer = (JLayer) c;
+      super.installUI(inputLayer);
+      JLayer layer = (JLayer) inputLayer;
       layer.setLayerEventMask(AWTEvent.MOUSE_EVENT_MASK);
    }//installUI
 
+   /**
+    * Removes the glass layer and clears stored member variable data lists
+    *
+    * @param inputLayer the layer to uninstall glass from
+    */
    @Override
-   public void uninstallUI(JComponent c)
+   public void uninstallUI(JComponent inputLayer)
    {
-      super.uninstallUI(c);
+      super.uninstallUI(inputLayer);
       mMapPointsOfInterestList.clear();
       this.mMapPointsOfInterestList.clear();
       this.mRouterImageBoundedRectangleList.clear();
       this.mRouterPointList.clear();
    }//uninstallUI
 
+   /**
+    * Event fired when mouse event occur ontop of the glass layer
+    *
+    * @param mouseEvent the applicable mouse event (click, move, release, etc.)
+    * @param layer      the layer component affected by the mouse movement
+    */
    @Override
    protected void processMouseEvent(MouseEvent mouseEvent, JLayer<? extends JLabel> layer)
    {
@@ -119,11 +165,22 @@ public class MapDisplayPanel
       }//if
    }//processMouseEvent
 
+   /**
+    * Returns the member variable with the stored Router coordinate list
+    *
+    * @return an array list with the router coordinates
+    */
    public ArrayList<Point> getRouterPointList()
    {
       return this.mRouterPointList;
-   }
+   }//getRouterPointList
 
+   /**
+    * Adds a point to the glass layer
+    *
+    * @param wifiLocalizationPoint the point to add
+    * @param layer                 the parent layer
+    */
    public void addNewWiFiLocalizationPoint(Point wifiLocalizationPoint, JLayer<? extends JLabel> layer)
    {
       /*ArrayList<Point> points = mMapPointsOfInterestList.get(layer);
@@ -136,14 +193,22 @@ public class MapDisplayPanel
        */
    }//addNewWiFiLocalizationPoint
 
+   /**
+    * Overriden paint function for the glass layer. Renders the appropriate
+    * position estimations and range rings
+    *
+    * @param graphicsComponent      the GUI graphics component to create the @D
+    *                               graphics from
+    * @param inputMapLayerComponent the main map view image
+    */
    @Override
-   public void paint(Graphics g, JComponent c)
+   public void paint(Graphics graphicsComponent, JComponent inputMapLayerComponent)
    {
-      Graphics2D graphics_2d_utility = (Graphics2D) g.create();
-      super.paint(graphics_2d_utility, c);
+      Graphics2D graphics_2d_utility = (Graphics2D) graphicsComponent.create();
+      super.paint(graphics_2d_utility, inputMapLayerComponent);
       graphics_2d_utility.setColor(Color.BLUE);
-      graphics_2d_utility.drawRect(0, 0, c.getWidth() - 1, c.getHeight() - 1);
-      ///ArrayList<Point> map_points_of_interest_list = mMapPointsOfInterestList.get((JLayer) c);
+      graphics_2d_utility.drawRect(0, 0, inputMapLayerComponent.getWidth() - 1, inputMapLayerComponent.getHeight() - 1);
+      ///ArrayList<Point> map_points_of_interest_list = mMapPointsOfInterestList.get((JLayer) inputMapLayerComponent);
       for (NewWifiDataListener.WifiDataType type : NewWifiDataListener.WifiDataType.values())
       {
          ArrayList<Point> points_to_draw = new ArrayList<Point>();
@@ -190,9 +255,9 @@ public class MapDisplayPanel
          }//if
       }//for
 
-      paintTrainingData(graphics_2d_utility, c);
-      paintRouters(graphics_2d_utility, c);
-      paintCalibrationStartingPoint(graphics_2d_utility, c);
+      paintTrainingData(graphics_2d_utility, inputMapLayerComponent);
+      paintRouters(graphics_2d_utility, inputMapLayerComponent);
+      paintCalibrationStartingPoint(graphics_2d_utility, inputMapLayerComponent);
 
       graphics_2d_utility.dispose();
    }//paint
@@ -243,6 +308,13 @@ public class MapDisplayPanel
       }//if
    }//paintTrainingData
 
+   /**
+    * Draws the calibration start point on the map indicating the general start
+    * area
+    *
+    * @param graphics2DUtility the 2D graphics drawing utility
+    * @param mainComponent     the main component container
+    */
    public void paintCalibrationStartingPoint(Graphics2D graphics2DUtility, JComponent mainComponent)
    {
       if (this.mCalibrationStartPoint != null)
@@ -256,6 +328,14 @@ public class MapDisplayPanel
       }//if
    }//paintCalibrationStartingPoint
 
+   /**
+    * Overridden new wifi data listener function. Acts on incoming wifi data by
+    * adding to
+    * the point of interest list
+    *
+    * @param newWifiPoint the new wifi data point
+    * @param dataType     the data type (algorithm used to create it)
+    */
    @Override
    public void newWifiData(Point newWifiPoint, NewWifiDataListener.WifiDataType dataType)
    {
@@ -273,6 +353,17 @@ public class MapDisplayPanel
       //mMapPointsOfInterestList.p
    }//newWifiData
 
+   /**
+    * Overriden new wifi data listener function. Acts on direction of number of
+    * points to display,
+    * given the # of points and the algorithm type, stores the number of points
+    * in
+    * the class member variable for repainting
+    *
+    * @param nPoints  the targeted number of points to display
+    * @param dataType the data type to check on number of points
+    * @return the total number of points available for the given data type
+    */
    @Override
    public int displayLastNPoints(int nPoints, NewWifiDataListener.WifiDataType dataType)
    {

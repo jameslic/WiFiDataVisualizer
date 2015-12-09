@@ -28,6 +28,7 @@ import positioning.Trilateration;
 import wifidatavisualizer.MapDisplayPanel;
 import wifidatavisualizer.WifiDataReader;
 import wifidatavisualizer.NewWifiDataListener;
+import wifidatavisualizer.Constants;
 
 /**
  * Main GUI class, displays map, location predictions, provides DVR controls
@@ -38,12 +39,7 @@ public class MapView
         extends javax.swing.JFrame
         implements ActionListener
 {
-
-   final public static String ROUTER_PREFIX_SSID = "CiscoLinksysE120";
-   final public static String DEFAULT_DATA_PATH = "data/02012015-5sec/";
-   final public static String DEFAULT_DATA_FILE_EXTENSION = ".csv";
-   final public static int DEFAULT_NUMBER_OF_ROUTERS = 4;
-   final public static int DEFAULT_PIXEL_ADJUSTMENT = 25;
+   //The main image in the Map View
    JLabel mIndoorMap = new JLabel();
    //SQLLite Connection for connecting to the training data set
    SQLLiteConnection mSqlLiteConnection = new SQLLiteConnection();
@@ -166,7 +162,7 @@ public class MapView
       HashMap<String, String> csv_input_map = new HashMap<>();
       for (int i = 0; i < numberOfRouters; ++i)
       {
-         String resource_string_path = pathPrefix + dataPath + routerPrefix + i + DEFAULT_DATA_FILE_EXTENSION;
+         String resource_string_path = pathPrefix + dataPath + routerPrefix + i + Constants.DEFAULT_DATA_FILE_EXTENSION;
          csv_input_map.put(routerPrefix + i, resource_string_path);
       }//for
       this.mWifiDataReader.openCSVFiles(csv_input_map);
@@ -177,19 +173,19 @@ public class MapView
     */
    private void parseCSVRecords()
    {
-      generateCSVInputFileList(mCsvInputFilePathPrefix, DEFAULT_DATA_PATH, ROUTER_PREFIX_SSID, DEFAULT_NUMBER_OF_ROUTERS);
+      generateCSVInputFileList(mCsvInputFilePathPrefix, Constants.DEFAULT_DATA_PATH, Constants.ROUTER_PREFIX_SSID, Constants.DEFAULT_NUMBER_OF_ROUTERS);
       for (int i = 0; i < 4; ++i)
       {
-         mSsidCsvRecordMap.put(ROUTER_PREFIX_SSID + i, mWifiDataReader.parseRecords(ROUTER_PREFIX_SSID + i));
+         mSsidCsvRecordMap.put(Constants.ROUTER_PREFIX_SSID + i, mWifiDataReader.parseRecords(Constants.ROUTER_PREFIX_SSID + i));
       }//for
       int i = 0;
-      mRouter0TimestampRSSPairs = this.mWifiDataReader.getSortedTreeMap(mSsidCsvRecordMap.get(ROUTER_PREFIX_SSID + i));
+      mRouter0TimestampRSSPairs = this.mWifiDataReader.getSortedTreeMap(mSsidCsvRecordMap.get(Constants.ROUTER_PREFIX_SSID + i));
       ++i;
-      mRouter1TimestampRSSPairs = this.mWifiDataReader.getSortedTreeMap(mSsidCsvRecordMap.get(ROUTER_PREFIX_SSID + i));
+      mRouter1TimestampRSSPairs = this.mWifiDataReader.getSortedTreeMap(mSsidCsvRecordMap.get(Constants.ROUTER_PREFIX_SSID + i));
       ++i;
-      mRouter2TimestampRSSPairs = this.mWifiDataReader.getSortedTreeMap(mSsidCsvRecordMap.get(ROUTER_PREFIX_SSID + i));
+      mRouter2TimestampRSSPairs = this.mWifiDataReader.getSortedTreeMap(mSsidCsvRecordMap.get(Constants.ROUTER_PREFIX_SSID + i));
       ++i;
-      mRouter3TimestampRSSPairs = this.mWifiDataReader.getSortedTreeMap(mSsidCsvRecordMap.get(ROUTER_PREFIX_SSID + i));
+      mRouter3TimestampRSSPairs = this.mWifiDataReader.getSortedTreeMap(mSsidCsvRecordMap.get(Constants.ROUTER_PREFIX_SSID + i));
       this.mWifiDataReader.closeFiles();
    }//parseCSVRecords
 
@@ -691,7 +687,7 @@ public class MapView
       int active_router_index = 0;
       for (int i = 0; i < accessPointArrayList.size(); ++i)
       {
-         if (accessPointArrayList.get(i).size() == 1 && mRouterPointList.size() == DEFAULT_NUMBER_OF_ROUTERS && accessPointArrayList.get(i).isEmpty() == false)
+         if (accessPointArrayList.get(i).size() == 1 && mRouterPointList.size() == Constants.DEFAULT_NUMBER_OF_ROUTERS && accessPointArrayList.get(i).isEmpty() == false)
          {
             access_point_list.add(new AccessPoint(accessPointArrayList.get(i).entrySet().iterator().next().getValue(), mRouterPointList.get(i), "CiscoLinksysE120" + i));
             java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "RSS: {0}", access_point_list.get(active_router_index).getSignalLevel());
@@ -763,19 +759,19 @@ public class MapView
       {
          if (testPoint.x < 0)
          {
-            testPoint.x = DEFAULT_PIXEL_ADJUSTMENT;
+            testPoint.x = Constants.DEFAULT_PIXEL_ADJUSTMENT;
          }//if
          if (testPoint.x > mIndoorMap.getWidth())
          {
-            testPoint.x = mIndoorMap.getWidth() - DEFAULT_PIXEL_ADJUSTMENT;
+            testPoint.x = mIndoorMap.getWidth() - Constants.DEFAULT_PIXEL_ADJUSTMENT;
          }//if
          if (testPoint.y > mIndoorMap.getHeight())
          {
-            testPoint.y = mIndoorMap.getHeight() - DEFAULT_PIXEL_ADJUSTMENT;
+            testPoint.y = mIndoorMap.getHeight() - Constants.DEFAULT_PIXEL_ADJUSTMENT;
          }//if
          if (testPoint.y < 0)
          {
-            testPoint.y = DEFAULT_PIXEL_ADJUSTMENT;
+            testPoint.y = Constants.DEFAULT_PIXEL_ADJUSTMENT;
          }//if
       }//if
    }//normalizePoint
@@ -795,7 +791,7 @@ public class MapView
          access_points_final_trio.add(null);
       }//for
       Collections.copy(access_points_final_trio, accessPointList);
-      if (access_points_final_trio.size() == DEFAULT_NUMBER_OF_ROUTERS)
+      if (access_points_final_trio.size() == Constants.DEFAULT_NUMBER_OF_ROUTERS)
       {
          int minIndex = access_points_final_trio.indexOf(Collections.min(access_points_final_trio));
          access_points_final_trio.remove(minIndex);
