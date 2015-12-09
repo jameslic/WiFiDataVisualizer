@@ -1,4 +1,7 @@
 
+/**
+ * Main GUI class, displays map, location predictions, provides DVR controls
+ */
 import database.SQLLiteConnection;
 import java.awt.Component;
 import java.awt.GridBagLayout;
@@ -13,8 +16,6 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JLabel;
 import javax.swing.JLayer;
 import javax.swing.JLayeredPane;
@@ -28,12 +29,8 @@ import wifidatavisualizer.MapDisplayPanel;
 import wifidatavisualizer.WifiDataReader;
 import wifidatavisualizer.NewWifiDataListener;
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 /**
+ * Main GUI class, displays map, location predictions, provides DVR controls
  *
  * @author James Licata
  */
@@ -43,6 +40,10 @@ public class MapView
 {
 
    final public static String ROUTER_PREFIX_SSID = "CiscoLinksysE120";
+   final public static String DEFAULT_DATA_PATH = "data/02012015-5sec/";
+   final public static String DEFAULT_DATA_FILE_EXTENSION = ".csv";
+   final public static int DEFAULT_NUMBER_OF_ROUTERS = 4;
+   final public static int DEFAULT_PIXEL_ADJUSTMENT = 25;
    JLabel mIndoorMap = new JLabel();
    //SQLLite Connection for connecting to the training data set
    SQLLiteConnection mSqlLiteConnection = new SQLLiteConnection();
@@ -63,16 +64,16 @@ public class MapView
    int mTotalNumberOfDataPoints = 0;
 
    /**
-    * Creates new form MapView
+    * Creates new form MapView, default constructor
     */
    public MapView()
    {
       this.mWifiDataListeners = new ArrayList<>();
       initComponents();
+      this.setLayout(new GridBagLayout());
       this.mStopPlaybackButton.setEnabled(false);
 
       this.mSliderValue = this.mNumberOfDataPointsSlider.getValue();
-      this.setLayout(new GridBagLayout());
       ArrayList<String> router_resource_path = new ArrayList<>();
       for (int i = 0; i < 4; ++i)
       {
@@ -93,11 +94,22 @@ public class MapView
 
    }//MapView
 
-   public void addListener(NewWifiDataListener toAdd)
+   /**
+    * Function to add a new wifi data listener to the Map View
+    *
+    * @param listenerToAdd the listener to add
+    */
+   public void addListener(NewWifiDataListener listenerToAdd)
    {
-      mWifiDataListeners.add(toAdd);
-   }
+      mWifiDataListeners.add(listenerToAdd);
+   }//addListener
 
+   /**
+    * Function to handle new wifi data. Notifies applicable listeners
+    *
+    * @param newData  point indicating new 2D data
+    * @param dataType The wifi data type
+    */
    public void newWifiData(Point newData, NewWifiDataListener.WifiDataType dataType)
    {
       // Notify everybody that may be interested.
@@ -107,58 +119,65 @@ public class MapView
       }//for
    }//newWifiData
 
+   /**
+    * Function used by DVR functionality to display a certain number of data
+    * points
+    *
+    * @param sliderValue The number of data points to show as indicated by the
+    *                    DVR slider
+    */
    public void displayNPoints(int sliderValue)
    {
       // Notify everybody that may be interested.
       NewWifiDataListener.WifiDataType data_type = NewWifiDataListener.WifiDataType.DEFAULT;
-      if (this.triangulationMenuItem.isSelected())
+      if (this.mTriangulationMenuItem.isSelected())
       {
          data_type = NewWifiDataListener.WifiDataType.TRIANGULATION;
       }//if
-      else if (this.trilaterationMenuItem.isSelected())
+      else if (this.mTrilaterationMenuItem.isSelected())
       {
          data_type = NewWifiDataListener.WifiDataType.TRILATERATION;
-      }
-      else if (this.fingerprintingMenuItem3.isSelected())
+      }//else if
+      else if (this.mFingerprintingMenuItem.isSelected())
       {
          data_type = NewWifiDataListener.WifiDataType.FINGERPRINTING;
-      }
+      }//else if
       else
       {
-
       }//else
       for (NewWifiDataListener wifi : mWifiDataListeners)
       {
          mTotalNumberOfDataPoints = wifi.displayLastNPoints(sliderValue, data_type);
          this.repaint();
       }//for
-   }
+   }//displayNPoints
 
-   private void testLayer()
-   {
-      JLayeredPane test_pane = this.getLayeredPane();
-      int component_count = test_pane.getComponentCount();
-      Component[] components = test_pane.getComponents();
-      Component test_comp = components[0].getComponentAt(500, 500);
-      //(JLayer) test_comp.get
-      Component test_comp2 = test_comp.getComponentAt(500, 500);
-      System.out.println("TEST");
-   }
-
-   private void generateCSVInputFileList(String pathPrefix)
+   /**
+    * Finds the CSV input files for the given directory and reads them into the
+    * Wifi Data Reader
+    *
+    * @param pathPrefix      The path prefix for the data
+    * @param dataPath        The path string to the data
+    * @param routerPrefix    the SSID prefix of the routers
+    * @param numberOfRouters the number of CSV router files
+    */
+   private void generateCSVInputFileList(String pathPrefix, String dataPath, String routerPrefix, int numberOfRouters)
    {
       HashMap<String, String> csv_input_map = new HashMap<>();
-      for (int i = 0; i < 4; ++i)
+      for (int i = 0; i < numberOfRouters; ++i)
       {
-         String resource_string_path = pathPrefix + "data/02012015-5sec/" + this.ROUTER_PREFIX_SSID + i + ".csv";
-         csv_input_map.put(ROUTER_PREFIX_SSID + i, resource_string_path);
+         String resource_string_path = pathPrefix + dataPath + routerPrefix + i + DEFAULT_DATA_FILE_EXTENSION;
+         csv_input_map.put(routerPrefix + i, resource_string_path);
       }//for
       this.mWifiDataReader.openCSVFiles(csv_input_map);
    }//generateCSVInputFileList
 
+   /**
+    * Parses the CSV file records
+    */
    private void parseCSVRecords()
    {
-      generateCSVInputFileList(mCsvInputFilePathPrefix);
+      generateCSVInputFileList(mCsvInputFilePathPrefix, DEFAULT_DATA_PATH, ROUTER_PREFIX_SSID, DEFAULT_NUMBER_OF_ROUTERS);
       for (int i = 0; i < 4; ++i)
       {
          mSsidCsvRecordMap.put(ROUTER_PREFIX_SSID + i, mWifiDataReader.parseRecords(ROUTER_PREFIX_SSID + i));
@@ -174,12 +193,22 @@ public class MapView
       this.mWifiDataReader.closeFiles();
    }//parseCSVRecords
 
+   /**
+    * Returns the last known timestamp from the router timestamp data
+    *
+    * @return latest known timestamp from all router data
+    */
    private int getLatestTimestampFromRouters()
    {
       return max(max(max(mRouter0TimestampRSSPairs.lastKey().intValue(), mRouter1TimestampRSSPairs.lastKey().intValue()),
                      mRouter2TimestampRSSPairs.lastKey().intValue()), mRouter3TimestampRSSPairs.lastKey().intValue());
    }//getLatestTimestampFromRouters
 
+   /**
+    * Returns the earliest known timestamp from the router timestamp data
+    *
+    * @return earliest known timestamp from all router data
+    */
    private int getEarliestTimestampFromRouters()
    {
       return min(min(min(mRouter0TimestampRSSPairs.firstKey().intValue(), mRouter1TimestampRSSPairs.firstKey().intValue()),
@@ -199,24 +228,24 @@ public class MapView
 
       jPanel1 = new javax.swing.JPanel();
       mNumberOfDataPointsSlider = new javax.swing.JSlider();
-      jPanel2 = new javax.swing.JPanel();
+      mMapLegendPanel = new javax.swing.JPanel();
       jLabel3 = new javax.swing.JLabel();
       jLabel4 = new javax.swing.JLabel();
       jLabel1 = new javax.swing.JLabel();
       jLabel2 = new javax.swing.JLabel();
-      jPanel3 = new javax.swing.JPanel();
+      mPlaybackControlsPanel = new javax.swing.JPanel();
       mStopPlaybackButton = new javax.swing.JButton();
       mPlaybackDataButton = new javax.swing.JButton();
       mPlaybackSpeedSecondsChooser = new javax.swing.JComboBox();
-      jLabel5 = new javax.swing.JLabel();
+      mPlaybackSpeedLabel = new javax.swing.JLabel();
       jMenuBar1 = new javax.swing.JMenuBar();
-      jMenu1 = new javax.swing.JMenu();
+      mFileMenu = new javax.swing.JMenu();
       mSelectMapViewItem = new javax.swing.JMenuItem();
-      jMenuItem1 = new javax.swing.JMenuItem();
-      jMenu2 = new javax.swing.JMenu();
-      triangulationMenuItem = new javax.swing.JCheckBoxMenuItem();
-      trilaterationMenuItem = new javax.swing.JCheckBoxMenuItem();
-      fingerprintingMenuItem3 = new javax.swing.JCheckBoxMenuItem();
+      mLoadWifiDataMenuItem = new javax.swing.JMenuItem();
+      mAlgorithmSelectorMenu = new javax.swing.JMenu();
+      mTriangulationMenuItem = new javax.swing.JCheckBoxMenuItem();
+      mTrilaterationMenuItem = new javax.swing.JCheckBoxMenuItem();
+      mFingerprintingMenuItem = new javax.swing.JCheckBoxMenuItem();
 
       setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
       setTitle("Wifi Data Visualizer");
@@ -245,7 +274,7 @@ public class MapView
          }
       });
 
-      jPanel2.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Legend", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Tahoma", 1, 14))); // NOI18N
+      mMapLegendPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Legend", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Tahoma", 1, 14))); // NOI18N
 
       jLabel3.setBackground(new java.awt.Color(255, 255, 51));
       jLabel3.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
@@ -264,22 +293,22 @@ public class MapView
       jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/magenta_circle.png"))); // NOI18N
       jLabel2.setText("Fingerprinting");
 
-      javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-      jPanel2.setLayout(jPanel2Layout);
-      jPanel2Layout.setHorizontalGroup(
-         jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-         .addGroup(jPanel2Layout.createSequentialGroup()
+      javax.swing.GroupLayout mMapLegendPanelLayout = new javax.swing.GroupLayout(mMapLegendPanel);
+      mMapLegendPanel.setLayout(mMapLegendPanelLayout);
+      mMapLegendPanelLayout.setHorizontalGroup(
+         mMapLegendPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+         .addGroup(mMapLegendPanelLayout.createSequentialGroup()
             .addContainerGap()
-            .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(mMapLegendPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                .addComponent(jLabel4)
                .addComponent(jLabel1)
                .addComponent(jLabel2)
                .addComponent(jLabel3))
             .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
       );
-      jPanel2Layout.setVerticalGroup(
-         jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+      mMapLegendPanelLayout.setVerticalGroup(
+         mMapLegendPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, mMapLegendPanelLayout.createSequentialGroup()
             .addContainerGap()
             .addComponent(jLabel2)
             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -291,7 +320,7 @@ public class MapView
             .addContainerGap())
       );
 
-      jPanel3.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Playback Controls", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Tahoma", 1, 13))); // NOI18N
+      mPlaybackControlsPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Playback Controls", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Tahoma", 1, 13))); // NOI18N
 
       mStopPlaybackButton.setText("Stop");
       mStopPlaybackButton.addActionListener(new java.awt.event.ActionListener()
@@ -314,36 +343,36 @@ public class MapView
       mPlaybackSpeedSecondsChooser.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "1", "2", "3", "4", "5" }));
       mPlaybackSpeedSecondsChooser.setToolTipText("Playback speed in seconds");
 
-      jLabel5.setText("Speed (s)");
+      mPlaybackSpeedLabel.setText("Speed (s)");
 
-      javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
-      jPanel3.setLayout(jPanel3Layout);
-      jPanel3Layout.setHorizontalGroup(
-         jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-         .addGroup(jPanel3Layout.createSequentialGroup()
-            .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-               .addGroup(jPanel3Layout.createSequentialGroup()
-                  .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                     .addGroup(jPanel3Layout.createSequentialGroup()
+      javax.swing.GroupLayout mPlaybackControlsPanelLayout = new javax.swing.GroupLayout(mPlaybackControlsPanel);
+      mPlaybackControlsPanel.setLayout(mPlaybackControlsPanelLayout);
+      mPlaybackControlsPanelLayout.setHorizontalGroup(
+         mPlaybackControlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+         .addGroup(mPlaybackControlsPanelLayout.createSequentialGroup()
+            .addGroup(mPlaybackControlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+               .addGroup(mPlaybackControlsPanelLayout.createSequentialGroup()
+                  .addGroup(mPlaybackControlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                     .addGroup(mPlaybackControlsPanelLayout.createSequentialGroup()
                         .addGap(34, 34, 34)
                         .addComponent(mStopPlaybackButton))
-                     .addGroup(jPanel3Layout.createSequentialGroup()
+                     .addGroup(mPlaybackControlsPanelLayout.createSequentialGroup()
                         .addGap(22, 22, 22)
                         .addComponent(mPlaybackDataButton)))
                   .addGap(0, 0, Short.MAX_VALUE))
-               .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+               .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, mPlaybackControlsPanelLayout.createSequentialGroup()
                   .addGap(0, 0, Short.MAX_VALUE)
-                  .addComponent(jLabel5)
+                  .addComponent(mPlaybackSpeedLabel)
                   .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                   .addComponent(mPlaybackSpeedSecondsChooser, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
             .addContainerGap())
       );
-      jPanel3Layout.setVerticalGroup(
-         jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-            .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+      mPlaybackControlsPanelLayout.setVerticalGroup(
+         mPlaybackControlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, mPlaybackControlsPanelLayout.createSequentialGroup()
+            .addGroup(mPlaybackControlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                .addComponent(mPlaybackSpeedSecondsChooser, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-               .addComponent(jLabel5))
+               .addComponent(mPlaybackSpeedLabel))
             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 8, Short.MAX_VALUE)
             .addComponent(mPlaybackDataButton)
             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -360,8 +389,8 @@ public class MapView
             .addComponent(mNumberOfDataPointsSlider, javax.swing.GroupLayout.PREFERRED_SIZE, 106, javax.swing.GroupLayout.PREFERRED_SIZE)
             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-               .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-               .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+               .addComponent(mMapLegendPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+               .addComponent(mPlaybackControlsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addContainerGap(56, Short.MAX_VALUE))
       );
       jPanel1Layout.setVerticalGroup(
@@ -370,9 +399,9 @@ public class MapView
             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                .addGroup(jPanel1Layout.createSequentialGroup()
                   .addGap(58, 58, 58)
-                  .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                  .addComponent(mPlaybackControlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                   .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                  .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                  .addComponent(mMapLegendPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                   .addGap(0, 451, Short.MAX_VALUE))
                .addGroup(jPanel1Layout.createSequentialGroup()
                   .addContainerGap()
@@ -380,7 +409,7 @@ public class MapView
             .addContainerGap())
       );
 
-      jMenu1.setText("File");
+      mFileMenu.setText("File");
 
       mSelectMapViewItem.setText("Select Map View");
       mSelectMapViewItem.addMenuKeyListener(new javax.swing.event.MenuKeyListener()
@@ -403,57 +432,57 @@ public class MapView
             mSelectMapViewItemActionPerformed(evt);
          }
       });
-      jMenu1.add(mSelectMapViewItem);
+      mFileMenu.add(mSelectMapViewItem);
 
-      jMenuItem1.setText("Load Wifi Data");
-      jMenuItem1.addActionListener(new java.awt.event.ActionListener()
+      mLoadWifiDataMenuItem.setText("Load Wifi Data");
+      mLoadWifiDataMenuItem.addActionListener(new java.awt.event.ActionListener()
       {
          public void actionPerformed(java.awt.event.ActionEvent evt)
          {
-            jMenuItem1ActionPerformed(evt);
+            mLoadWifiDataMenuItemActionPerformed(evt);
          }
       });
-      jMenu1.add(jMenuItem1);
+      mFileMenu.add(mLoadWifiDataMenuItem);
 
-      jMenuBar1.add(jMenu1);
+      jMenuBar1.add(mFileMenu);
 
-      jMenu2.setText("Algorithm");
+      mAlgorithmSelectorMenu.setText("Algorithm");
 
-      triangulationMenuItem.setText("Triangulation");
-      triangulationMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/triangulation.png"))); // NOI18N
-      triangulationMenuItem.addActionListener(new java.awt.event.ActionListener()
+      mTriangulationMenuItem.setText("Triangulation");
+      mTriangulationMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/triangulation.png"))); // NOI18N
+      mTriangulationMenuItem.addActionListener(new java.awt.event.ActionListener()
       {
          public void actionPerformed(java.awt.event.ActionEvent evt)
          {
-            triangulationMenuItemActionPerformed(evt);
+            mTriangulationMenuItemActionPerformed(evt);
          }
       });
-      jMenu2.add(triangulationMenuItem);
+      mAlgorithmSelectorMenu.add(mTriangulationMenuItem);
 
-      trilaterationMenuItem.setText("Trilateration");
-      trilaterationMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/trilateration.png"))); // NOI18N
-      trilaterationMenuItem.addActionListener(new java.awt.event.ActionListener()
+      mTrilaterationMenuItem.setText("Trilateration");
+      mTrilaterationMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/trilateration.png"))); // NOI18N
+      mTrilaterationMenuItem.addActionListener(new java.awt.event.ActionListener()
       {
          public void actionPerformed(java.awt.event.ActionEvent evt)
          {
-            trilaterationMenuItemActionPerformed(evt);
+            mTrilaterationMenuItemActionPerformed(evt);
          }
       });
-      jMenu2.add(trilaterationMenuItem);
+      mAlgorithmSelectorMenu.add(mTrilaterationMenuItem);
 
-      fingerprintingMenuItem3.setSelected(true);
-      fingerprintingMenuItem3.setText("Fingerprinting");
-      fingerprintingMenuItem3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/fingerprinting.png"))); // NOI18N
-      fingerprintingMenuItem3.addActionListener(new java.awt.event.ActionListener()
+      mFingerprintingMenuItem.setSelected(true);
+      mFingerprintingMenuItem.setText("Fingerprinting");
+      mFingerprintingMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/fingerprinting.png"))); // NOI18N
+      mFingerprintingMenuItem.addActionListener(new java.awt.event.ActionListener()
       {
          public void actionPerformed(java.awt.event.ActionEvent evt)
          {
-            fingerprintingMenuItem3ActionPerformed(evt);
+            mFingerprintingMenuItemActionPerformed(evt);
          }
       });
-      jMenu2.add(fingerprintingMenuItem3);
+      mAlgorithmSelectorMenu.add(mFingerprintingMenuItem);
 
-      jMenuBar1.add(jMenu2);
+      jMenuBar1.add(mAlgorithmSelectorMenu);
 
       setJMenuBar(jMenuBar1);
 
@@ -463,7 +492,7 @@ public class MapView
          layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
          .addGroup(layout.createSequentialGroup()
             .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addGap(0, 909, Short.MAX_VALUE))
+            .addGap(0, 894, Short.MAX_VALUE))
       );
       layout.setVerticalGroup(
          layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -475,20 +504,35 @@ public class MapView
       pack();
    }// </editor-fold>//GEN-END:initComponents
 
+   /**
+    * Key pressed accessing the Select Map View Menu Item
+    *
+    * @param evt Menu Key Event
+    */
    private void mSelectMapViewItemMenuKeyPressed(javax.swing.event.MenuKeyEvent evt)//GEN-FIRST:event_mSelectMapViewItemMenuKeyPressed
    {//GEN-HEADEREND:event_mSelectMapViewItemMenuKeyPressed
       // TODO add your handling code here:
       //Bring up the Map View choices dialog
    }//GEN-LAST:event_mSelectMapViewItemMenuKeyPressed
 
+   /**
+    * The main form window closed event. Cleans up open connections (i.e. SQL)
+    *
+    * @param evt Window Event
+    */
    private void formWindowClosed(java.awt.event.WindowEvent evt)//GEN-FIRST:event_formWindowClosed
    {//GEN-HEADEREND:event_formWindowClosed
-      // TODO add your handling code here:
       this.mSqlLiteConnection.closeDatabase();
    }//GEN-LAST:event_formWindowClosed
 
-   private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_jMenuItem1ActionPerformed
-   {//GEN-HEADEREND:event_jMenuItem1ActionPerformed
+   /**
+    * Event fired when Load Wifi Data menu item is selected. Loads the data and
+    * processes it for the currently selected algorithm.
+    *
+    * @param evt
+    */
+   private void mLoadWifiDataMenuItemActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mLoadWifiDataMenuItemActionPerformed
+   {//GEN-HEADEREND:event_mLoadWifiDataMenuItemActionPerformed
       //Read in the input data
       parseCSVRecords();
 
@@ -509,59 +553,84 @@ public class MapView
          this.repaint();
 
       }//if
-   }//GEN-LAST:event_jMenuItem1ActionPerformed
+   }//GEN-LAST:event_mLoadWifiDataMenuItemActionPerformed
 
+   /**
+    * Event fired when Select Map View menu item is selected. Allows user to
+    * upload a new map for the input data to be displayed on
+    *
+    * @param evt
+    */
    private void mSelectMapViewItemActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mSelectMapViewItemActionPerformed
    {//GEN-HEADEREND:event_mSelectMapViewItemActionPerformed
-      // THis is a test for adding the new wifi data
-      //this.newWifiData(new Point(300, 300), NewWifiDataListener.WifiDataType.TRILATERATION);
+      // TODO: Add ability to load in other maps and supply distance conversion parameters
    }//GEN-LAST:event_mSelectMapViewItemActionPerformed
 
-   private void fingerprintingMenuItem3ActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_fingerprintingMenuItem3ActionPerformed
-   {//GEN-HEADEREND:event_fingerprintingMenuItem3ActionPerformed
+   /**
+    * Event fired when Fingerprinting menu item is selected. Moves the indicator
+    * to the menu item
+    *
+    * @param evt Action Event
+    */
+   private void mFingerprintingMenuItemActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mFingerprintingMenuItemActionPerformed
+   {//GEN-HEADEREND:event_mFingerprintingMenuItemActionPerformed
       // TODO add your handling code here:
-      if (fingerprintingMenuItem3.isSelected())
+      if (mFingerprintingMenuItem.isSelected())
       {
-         triangulationMenuItem.setSelected(false);
-         trilaterationMenuItem.setSelected(false);
+         mTriangulationMenuItem.setSelected(false);
+         mTrilaterationMenuItem.setSelected(false);
       }//if
       else
       {
-         fingerprintingMenuItem3.setSelected(true);
+         mFingerprintingMenuItem.setSelected(true);
       }
-   }//GEN-LAST:event_fingerprintingMenuItem3ActionPerformed
+   }//GEN-LAST:event_mFingerprintingMenuItemActionPerformed
 
-   private void triangulationMenuItemActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_triangulationMenuItemActionPerformed
-   {//GEN-HEADEREND:event_triangulationMenuItemActionPerformed
-      // TODO add your handling code here:
-      if (triangulationMenuItem.isSelected())
+   /**
+    * Event fired when Triangulation menu item is selected. Moves the indicator
+    * to the menu item
+    *
+    * @param evt Action Event
+    */
+   private void mTriangulationMenuItemActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mTriangulationMenuItemActionPerformed
+   {//GEN-HEADEREND:event_mTriangulationMenuItemActionPerformed
+      if (mTriangulationMenuItem.isSelected())
       {
-         fingerprintingMenuItem3.setSelected(false);
-         trilaterationMenuItem.setSelected(false);
+         mFingerprintingMenuItem.setSelected(false);
+         mTrilaterationMenuItem.setSelected(false);
       }//if
       else
       {
-         triangulationMenuItem.setSelected(true);
-      }
-   }//GEN-LAST:event_triangulationMenuItemActionPerformed
+         mTriangulationMenuItem.setSelected(true);
+      }//else
+   }//GEN-LAST:event_mTriangulationMenuItemActionPerformed
 
-   private void trilaterationMenuItemActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_trilaterationMenuItemActionPerformed
-   {//GEN-HEADEREND:event_trilaterationMenuItemActionPerformed
-      // TODO add your handling code here:
-      if (trilaterationMenuItem.isSelected())
+   /**
+    * Event fired when Trilateration menu item is selected. Moves the indicator
+    * to the menu item
+    *
+    * @param evt Action Event
+    */
+   private void mTrilaterationMenuItemActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mTrilaterationMenuItemActionPerformed
+   {//GEN-HEADEREND:event_mTrilaterationMenuItemActionPerformed
+      if (mTrilaterationMenuItem.isSelected())
       {
-         fingerprintingMenuItem3.setSelected(false);
-         triangulationMenuItem.setSelected(false);
+         mFingerprintingMenuItem.setSelected(false);
+         mTriangulationMenuItem.setSelected(false);
       }//if
       else
       {
-         trilaterationMenuItem.setSelected(true);
-      }
-   }//GEN-LAST:event_trilaterationMenuItemActionPerformed
+         mTrilaterationMenuItem.setSelected(true);
+      }//else
+   }//GEN-LAST:event_mTrilaterationMenuItemActionPerformed
 
+   /**
+    * Event fired when the state of the slider changes
+    *
+    * @param evt Change Event
+    */
    private void mNumberOfDataPointsSliderStateChanged(javax.swing.event.ChangeEvent evt)//GEN-FIRST:event_mNumberOfDataPointsSliderStateChanged
    {//GEN-HEADEREND:event_mNumberOfDataPointsSliderStateChanged
-      // TODO add your handling code here:
       int slider_value = this.mNumberOfDataPointsSlider.getValue();
       if (slider_value != mSliderValue)
       {
@@ -570,12 +639,15 @@ public class MapView
          this.repaint();
       }//if
       java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "*********Slider Stuff********");
-
    }//GEN-LAST:event_mNumberOfDataPointsSliderStateChanged
 
+   /**
+    * Event fired when the playback button is clicked
+    *
+    * @param evt Action Event
+    */
    private void mPlaybackDataButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mPlaybackDataButtonActionPerformed
    {//GEN-HEADEREND:event_mPlaybackDataButtonActionPerformed
-      // TODO add your handling code here:
       this.mStopPlaybackButton.setEnabled(true);
       this.mPlaybackDataButton.setEnabled(false);
       this.mSliderValue = 0;
@@ -584,9 +656,13 @@ public class MapView
       mPlaybackTimer.start();
    }//GEN-LAST:event_mPlaybackDataButtonActionPerformed
 
+   /**
+    * Event fired when the stop playback button is clicked
+    *
+    * @param evt Action Event
+    */
    private void mStopPlaybackButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mStopPlaybackButtonActionPerformed
    {//GEN-HEADEREND:event_mStopPlaybackButtonActionPerformed
-      // TODO add your handling code here:
       this.mPlaybackTimer.stop();
       this.mPlaybackDataButton.setEnabled(true);
       this.mStopPlaybackButton.setEnabled(false);
@@ -603,13 +679,19 @@ public class MapView
       }//if
    }//printSubmMap
 
+   /**
+    * Given the known data points, makes an approximation using the available
+    * algorithm techniques
+    *
+    * @param accessPointArrayList
+    */
    private void makeApproximation(ArrayList<SortedMap<Integer, Integer>> accessPointArrayList)
    {
       ArrayList<AccessPoint> access_point_list = new ArrayList<>();
       int active_router_index = 0;
       for (int i = 0; i < accessPointArrayList.size(); ++i)
       {
-         if (accessPointArrayList.get(i).size() == 1 && mRouterPointList.size() == 4 && accessPointArrayList.get(i).isEmpty() == false)
+         if (accessPointArrayList.get(i).size() == 1 && mRouterPointList.size() == DEFAULT_NUMBER_OF_ROUTERS && accessPointArrayList.get(i).isEmpty() == false)
          {
             access_point_list.add(new AccessPoint(accessPointArrayList.get(i).entrySet().iterator().next().getValue(), mRouterPointList.get(i), "CiscoLinksysE120" + i));
             java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "RSS: {0}", access_point_list.get(active_router_index).getSignalLevel());
@@ -618,25 +700,28 @@ public class MapView
             ++active_router_index;
          }//if
       }//for
-      getThreeBestRouters(access_point_list);
-      if (access_point_list.size() == 3)
+      ArrayList<AccessPoint> router_trio_list = getThreeBestRouters(access_point_list);
+      if (router_trio_list.size() == 3)
       {
 
-         if (triangulationMenuItem.isSelected())
+         if (mTriangulationMenuItem.isSelected())
          {
-            Point resultingPoint = Triangulation.triangulate(access_point_list);
+            Point resultingPoint = Triangulation.triangulate(router_trio_list);
+            normalizePoint(resultingPoint);
             this.newWifiData(resultingPoint, NewWifiDataListener.WifiDataType.TRIANGULATION);
             java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Triangulation Point: {0}", resultingPoint.toString());
          }//if
-         else if (trilaterationMenuItem.isSelected())
+         else if (mTrilaterationMenuItem.isSelected())
          {
-            Point resultingPoint2 = Trilateration.findCenterPoint(access_point_list);
+            Point resultingPoint2 = Trilateration.findCenterPoint(router_trio_list);
+            normalizePoint(resultingPoint2);
             this.newWifiData(resultingPoint2, NewWifiDataListener.WifiDataType.TRILATERATION);
             java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Trilateration Point: {0}", resultingPoint2.toString());
          }//else if
-         else if (fingerprintingMenuItem3.isSelected())
+         else if (mFingerprintingMenuItem.isSelected())
          {
             Point resultingPoint3 = Fingerprinting.fingerprint(access_point_list, this.mSqlLiteConnection);
+            normalizePoint(resultingPoint3);
             this.newWifiData(resultingPoint3, NewWifiDataListener.WifiDataType.FINGERPRINTING);
             java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Fingerprinting Point: {0}", resultingPoint3.toString());
          }//else if
@@ -647,29 +732,91 @@ public class MapView
       }//if
    }//makeApproximation
 
-   private ArrayList<AccessPoint> getThreeBestRouters(ArrayList<AccessPoint> arrayList)
+   /**
+    * Tests whether a points X, Y coordinates are out of bounds
+    *
+    * @param testPoint
+    * @return whether or not the point is out of bounds
+    */
+   private boolean isPointOutOfBounds(Point testPoint)
+   {
+      boolean is_point_oob = false;
+      if (testPoint.x < 0 || testPoint.x > mIndoorMap.getWidth())
+      {
+         is_point_oob = true;
+      }//if
+      if (testPoint.y < 0 || testPoint.y > mIndoorMap.getHeight())
+      {
+         is_point_oob = true;
+      }//if
+      return is_point_oob;
+   }//isPointNegative
+
+   /**
+    * Removes negative aspects of a point to keep in view of the canvas
+    *
+    * @param testPoint the input point to normalize
+    */
+   private void normalizePoint(Point testPoint)
+   {
+      if (isPointOutOfBounds(testPoint))
+      {
+         if (testPoint.x < 0)
+         {
+            testPoint.x = DEFAULT_PIXEL_ADJUSTMENT;
+         }//if
+         if (testPoint.x > mIndoorMap.getWidth())
+         {
+            testPoint.x = mIndoorMap.getWidth() - DEFAULT_PIXEL_ADJUSTMENT;
+         }//if
+         if (testPoint.y > mIndoorMap.getHeight())
+         {
+            testPoint.y = mIndoorMap.getHeight() - DEFAULT_PIXEL_ADJUSTMENT;
+         }//if
+         if (testPoint.y < 0)
+         {
+            testPoint.y = DEFAULT_PIXEL_ADJUSTMENT;
+         }//if
+      }//if
+   }//normalizePoint
+
+   /**
+    * Returns the 3 strongest router (access point) candidates based on reported
+    * RSS
+    *
+    * @param accessPointList list of all the access points
+    * @return the list of the 3 best router candidates
+    */
+   private ArrayList<AccessPoint> getThreeBestRouters(ArrayList<AccessPoint> accessPointList)
    {
       ArrayList<AccessPoint> access_points_final_trio = new ArrayList<>();
-      if (arrayList.size() == 4)
+      for (int i = 0; i < accessPointList.size(); ++i)
       {
-         int minIndex = arrayList.indexOf(Collections.min(arrayList));
-         arrayList.remove(minIndex);
-         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Distance in pixels: {0}", arrayList.get(0).getDistance());
-         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Distance in pixels: {0}", arrayList.get(1).getDistance());
-         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Distance in pixels: {0}", arrayList.get(2).getDistance());
+         access_points_final_trio.add(null);
+      }//for
+      Collections.copy(access_points_final_trio, accessPointList);
+      if (access_points_final_trio.size() == DEFAULT_NUMBER_OF_ROUTERS)
+      {
+         int minIndex = access_points_final_trio.indexOf(Collections.min(access_points_final_trio));
+         access_points_final_trio.remove(minIndex);
+         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Distance in pixels: {0}", access_points_final_trio.get(0).getDistance());
+         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Distance in pixels: {0}", access_points_final_trio.get(1).getDistance());
+         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Distance in pixels: {0}", access_points_final_trio.get(2).getDistance());
       }//if
 
       return access_points_final_trio;
    }//getThreeBestRouters
 
    /**
+    * Map View main function
+    *
     * @param args the command line arguments
     */
    public static void main(String args[])
    {
       /* Set the Nimbus look and feel */
       //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+      /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
        * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html
        */
       try
@@ -712,28 +859,33 @@ public class MapView
    }//main
 
    // Variables declaration - do not modify//GEN-BEGIN:variables
-   private javax.swing.JCheckBoxMenuItem fingerprintingMenuItem3;
    private javax.swing.JLabel jLabel1;
    private javax.swing.JLabel jLabel2;
    private javax.swing.JLabel jLabel3;
    private javax.swing.JLabel jLabel4;
-   private javax.swing.JLabel jLabel5;
-   private javax.swing.JMenu jMenu1;
-   private javax.swing.JMenu jMenu2;
    private javax.swing.JMenuBar jMenuBar1;
-   private javax.swing.JMenuItem jMenuItem1;
    private javax.swing.JPanel jPanel1;
-   private javax.swing.JPanel jPanel2;
-   private javax.swing.JPanel jPanel3;
+   private javax.swing.JMenu mAlgorithmSelectorMenu;
+   private javax.swing.JMenu mFileMenu;
+   private javax.swing.JCheckBoxMenuItem mFingerprintingMenuItem;
+   private javax.swing.JMenuItem mLoadWifiDataMenuItem;
+   private javax.swing.JPanel mMapLegendPanel;
    private javax.swing.JSlider mNumberOfDataPointsSlider;
+   private javax.swing.JPanel mPlaybackControlsPanel;
    private javax.swing.JButton mPlaybackDataButton;
+   private javax.swing.JLabel mPlaybackSpeedLabel;
    private javax.swing.JComboBox mPlaybackSpeedSecondsChooser;
    private javax.swing.JMenuItem mSelectMapViewItem;
    private javax.swing.JButton mStopPlaybackButton;
-   private javax.swing.JCheckBoxMenuItem triangulationMenuItem;
-   private javax.swing.JCheckBoxMenuItem trilaterationMenuItem;
+   private javax.swing.JCheckBoxMenuItem mTriangulationMenuItem;
+   private javax.swing.JCheckBoxMenuItem mTrilaterationMenuItem;
    // End of variables declaration//GEN-END:variables
 
+   /**
+    * Event fired when the slider is moved
+    *
+    * @param e Action Event for slider
+    */
    @Override
    public void actionPerformed(ActionEvent e)
    {
