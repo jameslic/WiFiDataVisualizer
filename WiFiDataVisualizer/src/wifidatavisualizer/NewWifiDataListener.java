@@ -40,6 +40,7 @@ public interface NewWifiDataListener
       TRILATERATION,
       TRIANGULATION,
       FINGERPRINTING,
+      WEIGHTED_CENTROID,
       DEFAULT
    }//WifiDataType
 

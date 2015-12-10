@@ -25,6 +25,7 @@ import positioning.AccessPointObservationRecord;
 import positioning.Fingerprinting;
 import positioning.Triangulation;
 import positioning.Trilateration;
+import positioning.WeightedCentroid;
 import wifidatavisualizer.MapDisplayPanel;
 import wifidatavisualizer.WifiDataReader;
 import wifidatavisualizer.NewWifiDataListener;
@@ -59,6 +60,7 @@ public class MapView
    Timer mPlaybackTimer;
    int mTotalNumberOfDataPoints = 0;
    Point mLastFingerprintingPoint = new Point(0, 0);
+   Point mLastWeightedCentroidPoint = new Point(0, 0);
 
    /**
     * Creates new form MapView, default constructor
@@ -114,6 +116,10 @@ public class MapView
       {
          mLastFingerprintingPoint = newData;
       }//if
+      if (dataType == NewWifiDataListener.WifiDataType.WEIGHTED_CENTROID)
+      {
+         mLastWeightedCentroidPoint = newData;
+      }
       // Notify everybody that may be interested.
       for (NewWifiDataListener hl : mWifiDataListeners)
       {
@@ -132,7 +138,7 @@ public class MapView
    {
       // Notify everybody that may be interested.
       NewWifiDataListener.WifiDataType data_type = NewWifiDataListener.WifiDataType.DEFAULT;
-      if (this.mTriangulationMenuItem.isSelected())
+      if (this.mWeightedCentroidMenuItem.isSelected())
       {
          data_type = NewWifiDataListener.WifiDataType.TRIANGULATION;
       }//if
@@ -235,6 +241,7 @@ public class MapView
       jLabel4 = new javax.swing.JLabel();
       jLabel1 = new javax.swing.JLabel();
       jLabel2 = new javax.swing.JLabel();
+      mPatternMatchingLabel = new javax.swing.JLabel();
       mPlaybackControlsPanel = new javax.swing.JPanel();
       mStopPlaybackButton = new javax.swing.JButton();
       mPlaybackDataButton = new javax.swing.JButton();
@@ -245,9 +252,10 @@ public class MapView
       mSelectMapViewItem = new javax.swing.JMenuItem();
       mLoadWifiDataMenuItem = new javax.swing.JMenuItem();
       mAlgorithmSelectorMenu = new javax.swing.JMenu();
-      mTriangulationMenuItem = new javax.swing.JCheckBoxMenuItem();
-      mTrilaterationMenuItem = new javax.swing.JCheckBoxMenuItem();
       mFingerprintingMenuItem = new javax.swing.JCheckBoxMenuItem();
+      mPatternMatchingMenuItem = new javax.swing.JMenuItem();
+      mTrilaterationMenuItem = new javax.swing.JCheckBoxMenuItem();
+      mWeightedCentroidMenuItem = new javax.swing.JCheckBoxMenuItem();
 
       setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
       setTitle("Wifi Data Visualizer");
@@ -285,7 +293,7 @@ public class MapView
 
       jLabel4.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
       jLabel4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/green_circle.png"))); // NOI18N
-      jLabel4.setText("Triangulation");
+      jLabel4.setText("Weighted Centroid");
 
       jLabel1.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
       jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/dark_gray_circle.png"))); // NOI18N
@@ -294,6 +302,10 @@ public class MapView
       jLabel2.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
       jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/magenta_circle.png"))); // NOI18N
       jLabel2.setText("Fingerprinting");
+
+      mPatternMatchingLabel.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
+      mPatternMatchingLabel.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/red_circle.png"))); // NOI18N
+      mPatternMatchingLabel.setText("Pattern Matching");
 
       javax.swing.GroupLayout mMapLegendPanelLayout = new javax.swing.GroupLayout(mMapLegendPanel);
       mMapLegendPanel.setLayout(mMapLegendPanelLayout);
@@ -305,7 +317,8 @@ public class MapView
                .addComponent(jLabel4)
                .addComponent(jLabel1)
                .addComponent(jLabel2)
-               .addComponent(jLabel3))
+               .addComponent(jLabel3)
+               .addComponent(mPatternMatchingLabel))
             .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
       );
       mMapLegendPanelLayout.setVerticalGroup(
@@ -313,13 +326,15 @@ public class MapView
          .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, mMapLegendPanelLayout.createSequentialGroup()
             .addContainerGap()
             .addComponent(jLabel2)
+            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+            .addComponent(mPatternMatchingLabel)
             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addComponent(jLabel1)
             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
             .addComponent(jLabel4)
             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
             .addComponent(jLabel3)
-            .addContainerGap())
+            .addGap(54, 54, 54))
       );
 
       mPlaybackControlsPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Playback Controls", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Tahoma", 1, 13))); // NOI18N
@@ -351,23 +366,20 @@ public class MapView
       mPlaybackControlsPanel.setLayout(mPlaybackControlsPanelLayout);
       mPlaybackControlsPanelLayout.setHorizontalGroup(
          mPlaybackControlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, mPlaybackControlsPanelLayout.createSequentialGroup()
+            .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(mPlaybackSpeedLabel)
+            .addGap(18, 18, 18)
+            .addComponent(mPlaybackSpeedSecondsChooser, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGap(34, 34, 34))
          .addGroup(mPlaybackControlsPanelLayout.createSequentialGroup()
+            .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(mPlaybackControlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+               .addComponent(mPlaybackDataButton)
                .addGroup(mPlaybackControlsPanelLayout.createSequentialGroup()
-                  .addGroup(mPlaybackControlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                     .addGroup(mPlaybackControlsPanelLayout.createSequentialGroup()
-                        .addGap(34, 34, 34)
-                        .addComponent(mStopPlaybackButton))
-                     .addGroup(mPlaybackControlsPanelLayout.createSequentialGroup()
-                        .addGap(22, 22, 22)
-                        .addComponent(mPlaybackDataButton)))
-                  .addGap(0, 0, Short.MAX_VALUE))
-               .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, mPlaybackControlsPanelLayout.createSequentialGroup()
-                  .addGap(0, 0, Short.MAX_VALUE)
-                  .addComponent(mPlaybackSpeedLabel)
-                  .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                  .addComponent(mPlaybackSpeedSecondsChooser, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-            .addContainerGap())
+                  .addGap(10, 10, 10)
+                  .addComponent(mStopPlaybackButton)))
+            .addGap(0, 0, Short.MAX_VALUE))
       );
       mPlaybackControlsPanelLayout.setVerticalGroup(
          mPlaybackControlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -375,9 +387,9 @@ public class MapView
             .addGroup(mPlaybackControlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                .addComponent(mPlaybackSpeedSecondsChooser, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                .addComponent(mPlaybackSpeedLabel))
-            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 8, Short.MAX_VALUE)
-            .addComponent(mPlaybackDataButton)
             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+            .addComponent(mPlaybackDataButton)
+            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 8, Short.MAX_VALUE)
             .addComponent(mStopPlaybackButton)
             .addContainerGap())
       );
@@ -403,11 +415,11 @@ public class MapView
                   .addGap(58, 58, 58)
                   .addComponent(mPlaybackControlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                   .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                  .addComponent(mMapLegendPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                  .addGap(0, 451, Short.MAX_VALUE))
+                  .addComponent(mMapLegendPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 149, javax.swing.GroupLayout.PREFERRED_SIZE)
+                  .addGap(0, 0, Short.MAX_VALUE))
                .addGroup(jPanel1Layout.createSequentialGroup()
                   .addContainerGap()
-                  .addComponent(mNumberOfDataPointsSlider, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                  .addComponent(mNumberOfDataPointsSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 765, Short.MAX_VALUE)))
             .addContainerGap())
       );
 
@@ -450,16 +462,21 @@ public class MapView
 
       mAlgorithmSelectorMenu.setText("Algorithm");
 
-      mTriangulationMenuItem.setText("Triangulation");
-      mTriangulationMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/triangulation.png"))); // NOI18N
-      mTriangulationMenuItem.addActionListener(new java.awt.event.ActionListener()
+      mFingerprintingMenuItem.setSelected(true);
+      mFingerprintingMenuItem.setText("Fingerprinting");
+      mFingerprintingMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/fingerprinting.png"))); // NOI18N
+      mFingerprintingMenuItem.addActionListener(new java.awt.event.ActionListener()
       {
          public void actionPerformed(java.awt.event.ActionEvent evt)
          {
-            mTriangulationMenuItemActionPerformed(evt);
+            mFingerprintingMenuItemActionPerformed(evt);
          }
       });
-      mAlgorithmSelectorMenu.add(mTriangulationMenuItem);
+      mAlgorithmSelectorMenu.add(mFingerprintingMenuItem);
+
+      mPatternMatchingMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/pattern_matching.png"))); // NOI18N
+      mPatternMatchingMenuItem.setText("Pattern Matching");
+      mAlgorithmSelectorMenu.add(mPatternMatchingMenuItem);
 
       mTrilaterationMenuItem.setText("Trilateration");
       mTrilaterationMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/trilateration.png"))); // NOI18N
@@ -472,17 +489,16 @@ public class MapView
       });
       mAlgorithmSelectorMenu.add(mTrilaterationMenuItem);
 
-      mFingerprintingMenuItem.setSelected(true);
-      mFingerprintingMenuItem.setText("Fingerprinting");
-      mFingerprintingMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/fingerprinting.png"))); // NOI18N
-      mFingerprintingMenuItem.addActionListener(new java.awt.event.ActionListener()
+      mWeightedCentroidMenuItem.setText("Weighted Centroid");
+      mWeightedCentroidMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/triangulation.png"))); // NOI18N
+      mWeightedCentroidMenuItem.addActionListener(new java.awt.event.ActionListener()
       {
          public void actionPerformed(java.awt.event.ActionEvent evt)
          {
-            mFingerprintingMenuItemActionPerformed(evt);
+            mWeightedCentroidMenuItemActionPerformed(evt);
          }
       });
-      mAlgorithmSelectorMenu.add(mFingerprintingMenuItem);
+      mAlgorithmSelectorMenu.add(mWeightedCentroidMenuItem);
 
       jMenuBar1.add(mAlgorithmSelectorMenu);
 
@@ -537,7 +553,8 @@ public class MapView
    {//GEN-HEADEREND:event_mLoadWifiDataMenuItemActionPerformed
       //Read in the input data
       parseCSVRecords();
-      this.mLastFingerprintingPoint = this.mMapDisplayPanel.getCalibrationStartingPoint();
+      mLastFingerprintingPoint = this.mMapDisplayPanel.getCalibrationStartingPoint();
+      mLastWeightedCentroidPoint = this.mMapDisplayPanel.getCalibrationStartingPoint();
       //After it is read to process, start looking through it at the input interval
       if (mRouter0TimestampRSSPairs.size() > 0)
       {
@@ -579,7 +596,7 @@ public class MapView
       // TODO add your handling code here:
       if (mFingerprintingMenuItem.isSelected())
       {
-         mTriangulationMenuItem.setSelected(false);
+         mWeightedCentroidMenuItem.setSelected(false);
          mTrilaterationMenuItem.setSelected(false);
       }//if
       else
@@ -589,23 +606,24 @@ public class MapView
    }//GEN-LAST:event_mFingerprintingMenuItemActionPerformed
 
    /**
-    * Event fired when Triangulation menu item is selected. Moves the indicator
+    * Event fired when Weighted Centroid menu item is selected. Moves the
+    * indicator
     * to the menu item
     *
     * @param evt Action Event
     */
-   private void mTriangulationMenuItemActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mTriangulationMenuItemActionPerformed
-   {//GEN-HEADEREND:event_mTriangulationMenuItemActionPerformed
-      if (mTriangulationMenuItem.isSelected())
+   private void mWeightedCentroidMenuItemActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mWeightedCentroidMenuItemActionPerformed
+   {//GEN-HEADEREND:event_mWeightedCentroidMenuItemActionPerformed
+      if (mWeightedCentroidMenuItem.isSelected())
       {
          mFingerprintingMenuItem.setSelected(false);
          mTrilaterationMenuItem.setSelected(false);
       }//if
       else
       {
-         mTriangulationMenuItem.setSelected(true);
+         mWeightedCentroidMenuItem.setSelected(true);
       }//else
-   }//GEN-LAST:event_mTriangulationMenuItemActionPerformed
+   }//GEN-LAST:event_mWeightedCentroidMenuItemActionPerformed
 
    /**
     * Event fired when Trilateration menu item is selected. Moves the indicator
@@ -618,7 +636,7 @@ public class MapView
       if (mTrilaterationMenuItem.isSelected())
       {
          mFingerprintingMenuItem.setSelected(false);
-         mTriangulationMenuItem.setSelected(false);
+         mWeightedCentroidMenuItem.setSelected(false);
       }//if
       else
       {
@@ -706,12 +724,12 @@ public class MapView
       if (router_trio_list.size() == 3)
       {
 
-         if (mTriangulationMenuItem.isSelected())
+         if (mWeightedCentroidMenuItem.isSelected())
          {
-            Point resultingPoint = Triangulation.triangulate(router_trio_list);
+            Point resultingPoint = WeightedCentroid.weightedCentroid(access_point_list, mSqlLiteConnection, mLastWeightedCentroidPoint);
             normalizePoint(resultingPoint);
-            this.newWifiData(resultingPoint, NewWifiDataListener.WifiDataType.TRIANGULATION);
-            java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Triangulation Point: {0}", resultingPoint.toString());
+            this.newWifiData(resultingPoint, NewWifiDataListener.WifiDataType.WEIGHTED_CENTROID);
+            java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Weighted Centroid Point: {0}", resultingPoint.toString());
          }//if
          else if (mTrilaterationMenuItem.isSelected())
          {
@@ -873,14 +891,16 @@ public class MapView
    private javax.swing.JMenuItem mLoadWifiDataMenuItem;
    private javax.swing.JPanel mMapLegendPanel;
    private javax.swing.JSlider mNumberOfDataPointsSlider;
+   private javax.swing.JLabel mPatternMatchingLabel;
+   private javax.swing.JMenuItem mPatternMatchingMenuItem;
    private javax.swing.JPanel mPlaybackControlsPanel;
    private javax.swing.JButton mPlaybackDataButton;
    private javax.swing.JLabel mPlaybackSpeedLabel;
    private javax.swing.JComboBox mPlaybackSpeedSecondsChooser;
    private javax.swing.JMenuItem mSelectMapViewItem;
    private javax.swing.JButton mStopPlaybackButton;
-   private javax.swing.JCheckBoxMenuItem mTriangulationMenuItem;
    private javax.swing.JCheckBoxMenuItem mTrilaterationMenuItem;
+   private javax.swing.JCheckBoxMenuItem mWeightedCentroidMenuItem;
    // End of variables declaration//GEN-END:variables
 
    /**

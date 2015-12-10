@@ -31,6 +31,23 @@ public class FingerprintingPoint
       incrementFrequencyCount();
    }//AccessPoint
 
+   public int getNumberOfRouters()
+   {
+      return this.mRouterSignalLevelDifferenceMap.size();
+   }
+
+   public String getRouterSSIDAtIndex(int index)
+   {
+      if (index < this.mRouterSignalLevelDifferenceMap.size())
+      {
+         return (String) this.mRouterSignalLevelDifferenceMap.keySet().toArray()[index];
+      }//if
+      else
+      {
+         return null;
+      }
+   }//getRouterSSIDAtIndex
+
    public void incrementFrequencyCount()
    {
       ++mFrequencyCount;

@@ -229,12 +229,16 @@ public class MapDisplayPanel
                graphics_2d_utility.setColor(Color.MAGENTA);
                points_to_draw = this.mMapPointsOfInterestList.get(type);
                break;
-            case TRIANGULATION:
+            case WEIGHTED_CENTROID:
                graphics_2d_utility.setColor(Color.GREEN);
                points_to_draw = this.mMapPointsOfInterestList.get(type);
                break;
             case TRILATERATION:
                graphics_2d_utility.setColor(Color.DARK_GRAY);
+               points_to_draw = this.mMapPointsOfInterestList.get(type);
+               break;
+            case TRIANGULATION:
+               graphics_2d_utility.setColor(Color.orange);
                points_to_draw = this.mMapPointsOfInterestList.get(type);
                break;
             default:

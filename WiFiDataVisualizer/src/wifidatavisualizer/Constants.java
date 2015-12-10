@@ -4,6 +4,10 @@
  */
 package wifidatavisualizer;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Constants related to the Wifi Data Visualizer application
  *
@@ -29,6 +33,19 @@ public class Constants
    final public static String CSV_FILE_RECORD_RSS_COLUMN = "RSS";
 
    //Fingerprinting
-   final public static int FINGERPRINTING_K_NEAREST_NEIGHBORS = 2;
+   final public static int FINGERPRINTING_K_NEAREST_NEIGHBORS = 4;
    final public static int FINGERPRINTING_K_NEAREST_NEIGHBORS_DISTANCE_TOLERANCE = 90;
+
+   //Weighted Centroid
+   final public static int WEIGHTED_CENTROID_NUMBER_OF_POINTS = 4;
+
+   public static Map<String, Double> getRouterWeightMap()
+   {
+      Map<String, Double> result = new HashMap<>();
+      result.put(ROUTER_PREFIX_SSID + "0", 0.85);
+      result.put(ROUTER_PREFIX_SSID + "1", 0.75);
+      result.put(ROUTER_PREFIX_SSID + "2", 0.80);
+      result.put(ROUTER_PREFIX_SSID + "3", 0.95);
+      return Collections.unmodifiableMap(result);
+   }//getRouterWeightMap
 }//Constants
