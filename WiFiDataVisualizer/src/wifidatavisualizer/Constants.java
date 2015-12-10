@@ -27,4 +27,8 @@ public class Constants
    //CSV Data File Constants
    final public static String CSV_FILE_RECORD_TIMESTAMP_COLUMN = "Timestamp";
    final public static String CSV_FILE_RECORD_RSS_COLUMN = "RSS";
+
+   //Fingerprinting
+   final public static int FINGERPRINTING_K_NEAREST_NEIGHBORS = 2;
+   final public static int FINGERPRINTING_K_NEAREST_NEIGHBORS_DISTANCE_TOLERANCE = 90;
 }//Constants

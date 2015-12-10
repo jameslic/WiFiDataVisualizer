@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import static java.lang.Math.abs;
+import static java.lang.Math.abs;
 
 /**
  * Class to read in wifi data from recorded CSV files

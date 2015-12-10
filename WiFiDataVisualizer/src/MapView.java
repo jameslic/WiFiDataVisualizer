@@ -58,6 +58,7 @@ public class MapView
    int mSliderValue = 0;
    Timer mPlaybackTimer;
    int mTotalNumberOfDataPoints = 0;
+   Point mLastFingerprintingPoint = new Point(0, 0);
 
    /**
     * Creates new form MapView, default constructor
@@ -108,6 +109,11 @@ public class MapView
     */
    public void newWifiData(Point newData, NewWifiDataListener.WifiDataType dataType)
    {
+      //If it is fingerprinting, save off the last point
+      if (dataType == NewWifiDataListener.WifiDataType.FINGERPRINTING)
+      {
+         mLastFingerprintingPoint = newData;
+      }//if
       // Notify everybody that may be interested.
       for (NewWifiDataListener hl : mWifiDataListeners)
       {
@@ -531,7 +537,7 @@ public class MapView
    {//GEN-HEADEREND:event_mLoadWifiDataMenuItemActionPerformed
       //Read in the input data
       parseCSVRecords();
-
+      this.mLastFingerprintingPoint = this.mMapDisplayPanel.getCalibrationStartingPoint();
       //After it is read to process, start looking through it at the input interval
       if (mRouter0TimestampRSSPairs.size() > 0)
       {
@@ -716,7 +722,7 @@ public class MapView
          }//else if
          else if (mFingerprintingMenuItem.isSelected())
          {
-            Point resultingPoint3 = Fingerprinting.fingerprint(access_point_list, this.mSqlLiteConnection);
+            Point resultingPoint3 = Fingerprinting.fingerprint(access_point_list, this.mSqlLiteConnection, mLastFingerprintingPoint);
             normalizePoint(resultingPoint3);
             this.newWifiData(resultingPoint3, NewWifiDataListener.WifiDataType.FINGERPRINTING);
             java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Fingerprinting Point: {0}", resultingPoint3.toString());

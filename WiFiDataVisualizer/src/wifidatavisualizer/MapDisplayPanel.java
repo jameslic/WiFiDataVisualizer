@@ -129,6 +129,16 @@ public class MapDisplayPanel
    }//uninstallUI
 
    /**
+    * Returns the calibration starting point
+    *
+    * @return the calibration starting point
+    */
+   public Point getCalibrationStartingPoint()
+   {
+      return this.mCalibrationStartPoint;
+   }//getCalibrationStartingPoint
+
+   /**
     * Event fired when mouse event occur ontop of the glass layer
     *
     * @param mouseEvent the applicable mouse event (click, move, release, etc.)

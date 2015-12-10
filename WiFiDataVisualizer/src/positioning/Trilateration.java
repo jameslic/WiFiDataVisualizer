@@ -8,7 +8,6 @@ package positioning;
 import java.awt.Point;
 import java.awt.geom.Ellipse2D;
 import java.util.ArrayList;
-import javafx.scene.shape.Circle;
 
 /**
  *
