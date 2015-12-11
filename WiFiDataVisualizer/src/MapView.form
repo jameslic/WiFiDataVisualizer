@@ -45,13 +45,16 @@
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="mFingerprintingMenuItemActionPerformed"/>
               </Events>
             </MenuItem>
-            <MenuItem class="javax.swing.JMenuItem" name="mPatternMatchingMenuItem">
+            <MenuItem class="javax.swing.JCheckBoxMenuItem" name="mPatternMatchingMenuItem">
               <Properties>
+                <Property name="text" type="java.lang.String" value="Pattern Matching"/>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/resources/pattern_matching.png"/>
                 </Property>
-                <Property name="text" type="java.lang.String" value="Pattern Matching"/>
               </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="mPatternMatchingMenuItemActionPerformed"/>
+              </Events>
             </MenuItem>
             <MenuItem class="javax.swing.JCheckBoxMenuItem" name="mTrilaterationMenuItem">
               <Properties>

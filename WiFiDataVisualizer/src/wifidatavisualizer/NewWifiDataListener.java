@@ -33,7 +33,7 @@ public interface NewWifiDataListener
    public int displayLastNPoints(int nPoints, WifiDataType dataType);
 
    /**
-    * Enumeration for Wifi Alorithm indicators for data
+    * Enumeration for Wifi Algorithm indicators for data
     */
    enum WifiDataType
    {
@@ -41,6 +41,7 @@ public interface NewWifiDataListener
       TRIANGULATION,
       FINGERPRINTING,
       WEIGHTED_CENTROID,
+      PATTERN_MATCHING,
       DEFAULT
    }//WifiDataType
 

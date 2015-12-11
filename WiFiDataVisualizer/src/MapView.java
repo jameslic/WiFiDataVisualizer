@@ -23,6 +23,7 @@ import javax.swing.Timer;
 import org.apache.commons.csv.CSVRecord;
 import positioning.AccessPointObservationRecord;
 import positioning.Fingerprinting;
+import positioning.PatternMatching;
 import positioning.Triangulation;
 import positioning.Trilateration;
 import positioning.WeightedCentroid;
@@ -61,6 +62,7 @@ public class MapView
    int mTotalNumberOfDataPoints = 0;
    Point mLastFingerprintingPoint = new Point(0, 0);
    Point mLastWeightedCentroidPoint = new Point(0, 0);
+   Point mLastPatternMatchingPoint = new Point(0, 0);
 
    /**
     * Creates new form MapView, default constructor
@@ -119,7 +121,11 @@ public class MapView
       if (dataType == NewWifiDataListener.WifiDataType.WEIGHTED_CENTROID)
       {
          mLastWeightedCentroidPoint = newData;
-      }
+      }//if
+      if (dataType == NewWifiDataListener.WifiDataType.PATTERN_MATCHING)
+      {
+         mLastPatternMatchingPoint = newData;
+      }//if
       // Notify everybody that may be interested.
       for (NewWifiDataListener hl : mWifiDataListeners)
       {
@@ -149,6 +155,10 @@ public class MapView
       else if (this.mFingerprintingMenuItem.isSelected())
       {
          data_type = NewWifiDataListener.WifiDataType.FINGERPRINTING;
+      }//else if
+      else if (this.mPatternMatchingMenuItem.isSelected())
+      {
+         data_type = NewWifiDataListener.WifiDataType.PATTERN_MATCHING;
       }//else if
       else
       {
@@ -253,7 +263,7 @@ public class MapView
       mLoadWifiDataMenuItem = new javax.swing.JMenuItem();
       mAlgorithmSelectorMenu = new javax.swing.JMenu();
       mFingerprintingMenuItem = new javax.swing.JCheckBoxMenuItem();
-      mPatternMatchingMenuItem = new javax.swing.JMenuItem();
+      mPatternMatchingMenuItem = new javax.swing.JCheckBoxMenuItem();
       mTrilaterationMenuItem = new javax.swing.JCheckBoxMenuItem();
       mWeightedCentroidMenuItem = new javax.swing.JCheckBoxMenuItem();
 
@@ -474,8 +484,15 @@ public class MapView
       });
       mAlgorithmSelectorMenu.add(mFingerprintingMenuItem);
 
-      mPatternMatchingMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/pattern_matching.png"))); // NOI18N
       mPatternMatchingMenuItem.setText("Pattern Matching");
+      mPatternMatchingMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/pattern_matching.png"))); // NOI18N
+      mPatternMatchingMenuItem.addActionListener(new java.awt.event.ActionListener()
+      {
+         public void actionPerformed(java.awt.event.ActionEvent evt)
+         {
+            mPatternMatchingMenuItemActionPerformed(evt);
+         }
+      });
       mAlgorithmSelectorMenu.add(mPatternMatchingMenuItem);
 
       mTrilaterationMenuItem.setText("Trilateration");
@@ -555,6 +572,7 @@ public class MapView
       parseCSVRecords();
       mLastFingerprintingPoint = this.mMapDisplayPanel.getCalibrationStartingPoint();
       mLastWeightedCentroidPoint = this.mMapDisplayPanel.getCalibrationStartingPoint();
+      mLastPatternMatchingPoint = this.mMapDisplayPanel.getCalibrationStartingPoint();
       //After it is read to process, start looking through it at the input interval
       if (mRouter0TimestampRSSPairs.size() > 0)
       {
@@ -593,16 +611,16 @@ public class MapView
     */
    private void mFingerprintingMenuItemActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mFingerprintingMenuItemActionPerformed
    {//GEN-HEADEREND:event_mFingerprintingMenuItemActionPerformed
-      // TODO add your handling code here:
       if (mFingerprintingMenuItem.isSelected())
       {
          mWeightedCentroidMenuItem.setSelected(false);
          mTrilaterationMenuItem.setSelected(false);
+         mPatternMatchingMenuItem.setSelected(false);
       }//if
       else
       {
          mFingerprintingMenuItem.setSelected(true);
-      }
+      }//else
    }//GEN-LAST:event_mFingerprintingMenuItemActionPerformed
 
    /**
@@ -618,6 +636,7 @@ public class MapView
       {
          mFingerprintingMenuItem.setSelected(false);
          mTrilaterationMenuItem.setSelected(false);
+         mPatternMatchingMenuItem.setSelected(false);
       }//if
       else
       {
@@ -637,6 +656,7 @@ public class MapView
       {
          mFingerprintingMenuItem.setSelected(false);
          mWeightedCentroidMenuItem.setSelected(false);
+         mPatternMatchingMenuItem.setSelected(false);
       }//if
       else
       {
@@ -687,6 +707,20 @@ public class MapView
       this.mPlaybackDataButton.setEnabled(true);
       this.mStopPlaybackButton.setEnabled(false);
    }//GEN-LAST:event_mStopPlaybackButtonActionPerformed
+
+   private void mPatternMatchingMenuItemActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mPatternMatchingMenuItemActionPerformed
+   {//GEN-HEADEREND:event_mPatternMatchingMenuItemActionPerformed
+      if (mPatternMatchingMenuItem.isSelected())
+      {
+         mFingerprintingMenuItem.setSelected(false);
+         mWeightedCentroidMenuItem.setSelected(false);
+         mTrilaterationMenuItem.setSelected(false);
+      }//if
+      else
+      {
+         mPatternMatchingMenuItem.setSelected(true);
+      }//else
+   }//GEN-LAST:event_mPatternMatchingMenuItemActionPerformed
 
    private void printSubMap(SortedMap<Integer, Integer> submap, int index)
    {
@@ -744,6 +778,13 @@ public class MapView
             normalizePoint(resultingPoint3);
             this.newWifiData(resultingPoint3, NewWifiDataListener.WifiDataType.FINGERPRINTING);
             java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Fingerprinting Point: {0}", resultingPoint3.toString());
+         }//else if
+         else if (mPatternMatchingMenuItem.isSelected())
+         {
+            Point resultingPoint4 = PatternMatching.patternMatching(access_point_list, this.mSqlLiteConnection, mLastFingerprintingPoint);
+            normalizePoint(resultingPoint4);
+            this.newWifiData(resultingPoint4, NewWifiDataListener.WifiDataType.PATTERN_MATCHING);
+            java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Pattern Matching Point: {0}", resultingPoint4.toString());
          }//else if
          else
          {
@@ -892,7 +933,7 @@ public class MapView
    private javax.swing.JPanel mMapLegendPanel;
    private javax.swing.JSlider mNumberOfDataPointsSlider;
    private javax.swing.JLabel mPatternMatchingLabel;
-   private javax.swing.JMenuItem mPatternMatchingMenuItem;
+   private javax.swing.JCheckBoxMenuItem mPatternMatchingMenuItem;
    private javax.swing.JPanel mPlaybackControlsPanel;
    private javax.swing.JButton mPlaybackDataButton;
    private javax.swing.JLabel mPlaybackSpeedLabel;

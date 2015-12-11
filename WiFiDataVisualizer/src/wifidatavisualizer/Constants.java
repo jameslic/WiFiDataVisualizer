@@ -20,8 +20,8 @@ public class Constants
    final public static String DEFAULT_DATA_FILE_EXTENSION = ".csv";
    final public static int DEFAULT_NUMBER_OF_ROUTERS = 4;
    final public static int DEFAULT_PIXEL_ADJUSTMENT = 25;
-   final public static int DEFAULT_CALIBRATION_START_POINT_X_COORDINATE = 500;
-   final public static int DEFAULT_CALIBRATION_START_POINT_Y_COORDINATE = 500;
+   final public static int DEFAULT_CALIBRATION_START_POINT_X_COORDINATE = 1081;
+   final public static int DEFAULT_CALIBRATION_START_POINT_Y_COORDINATE = 518;
 
    //Map conversions
    final public static double PIXELS_PER_FOOT = 5.7;

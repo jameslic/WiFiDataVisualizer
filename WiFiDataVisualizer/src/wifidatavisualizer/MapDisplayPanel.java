@@ -238,11 +238,15 @@ public class MapDisplayPanel
                points_to_draw = this.mMapPointsOfInterestList.get(type);
                break;
             case TRIANGULATION:
-               graphics_2d_utility.setColor(Color.orange);
+               graphics_2d_utility.setColor(Color.ORANGE);
+               points_to_draw = this.mMapPointsOfInterestList.get(type);
+               break;
+            case PATTERN_MATCHING:
+               graphics_2d_utility.setColor(Color.RED);
                points_to_draw = this.mMapPointsOfInterestList.get(type);
                break;
             default:
-               graphics_2d_utility.setColor(Color.RED);
+               graphics_2d_utility.setColor(Color.BLACK);
                points_to_draw = this.mMapPointsOfInterestList.get(type);
                break;
          }//switch
@@ -336,7 +340,7 @@ public class MapDisplayPanel
          graphics2DUtility.setColor(Color.ORANGE);
          graphics2DUtility.fillOval(this.mCalibrationStartPoint.x - 8, this.mCalibrationStartPoint.y - 8, 16, 16);
          this.mBoundsCheckOval = new Ellipse2D.Double(this.mCalibrationStartPoint.x - 125, this.mCalibrationStartPoint.y - 125, 250, 250);
-         graphics2DUtility.setColor(Color.RED);
+         graphics2DUtility.setColor(Color.ORANGE);
          graphics2DUtility.setStroke(new BasicStroke(5));
          graphics2DUtility.draw(mBoundsCheckOval);
       }//if
@@ -356,7 +360,7 @@ public class MapDisplayPanel
       ArrayList<Point> point_list = this.mMapPointsOfInterestList.get(dataType);
       if (point_list == null)
       {
-         point_list = new ArrayList<Point>();
+         point_list = new ArrayList<>();
       }//if
       point_list.add(newWifiPoint);
       if (this.mNumberOfPointsToDisplay == 0)
@@ -368,7 +372,7 @@ public class MapDisplayPanel
    }//newWifiData
 
    /**
-    * Overriden new wifi data listener function. Acts on direction of number of
+    * Overridden new wifi data listener function. Acts on direction of number of
     * points to display,
     * given the # of points and the algorithm type, stores the number of points
     * in
