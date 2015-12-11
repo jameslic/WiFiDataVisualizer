@@ -30,8 +30,8 @@ public class Fingerprinting
     */
    public static Point fingerprint(ArrayList<AccessPointObservationRecord> accessPointList, SQLLiteConnection trainingDataBase, Point lastPointApproximation)
    {
-      Collection<FingerprintingPoint> collection = trainingDataBase.getLikeliestPoints(accessPointList).values();
-      ArrayList<FingerprintingPoint> fingerprinting_point_list = new ArrayList<>(collection);
+      Collection<CandidatePoint> collection = trainingDataBase.getLikeliestPoints(accessPointList).values();
+      ArrayList<CandidatePoint> fingerprinting_point_list = new ArrayList<>(collection);
       Collections.sort(fingerprinting_point_list);
       int highest_frequency = fingerprinting_point_list.get(fingerprinting_point_list.size() - 1).getFrequencyCount();
       while (fingerprinting_point_list.get(0).getFrequencyCount() < highest_frequency)
@@ -59,12 +59,12 @@ public class Fingerprinting
     *                               final decider when
     * @return the final point approximation
     */
-   public static Point chooseBestPoint(ArrayList<FingerprintingPoint> fingerprintList, Point lastPointApproximation)
+   public static Point chooseBestPoint(ArrayList<CandidatePoint> fingerprintList, Point lastPointApproximation)
    {
       int best_point_index = 0;
       double average_signal_difference = fingerprintList.get(0).getAverageSignalDiff();
       int index_counter = 0;
-      for (FingerprintingPoint f_point : fingerprintList)
+      for (CandidatePoint f_point : fingerprintList)
       {
          if (f_point.getAverageSignalDiff() < average_signal_difference)
          {
@@ -103,7 +103,7 @@ public class Fingerprinting
     *                               final decider when
     * @return the final point approximation
     */
-   public static Point getPointEstimationFromKNearestNeighbors(ArrayList<FingerprintingPoint> fingerprintList, Point lastPointApproximation)
+   public static Point getPointEstimationFromKNearestNeighbors(ArrayList<CandidatePoint> fingerprintList, Point lastPointApproximation)
    {
       ArrayList<Point> point_list = new ArrayList<Point>(Constants.FINGERPRINTING_K_NEAREST_NEIGHBORS);
       Point best_training_point = chooseBestPoint(fingerprintList, lastPointApproximation);
@@ -127,12 +127,12 @@ public class Fingerprinting
       }//else
    }//chooseBestPoint
 
-   public static int getBestPointIndex(ArrayList<FingerprintingPoint> fingerprintList)
+   public static int getBestPointIndex(ArrayList<CandidatePoint> fingerprintList)
    {
       int best_point_index = 0;
       double average_signal_difference = fingerprintList.get(0).getAverageSignalDiff();
       int index_counter = 0;
-      for (FingerprintingPoint f_point : fingerprintList)
+      for (CandidatePoint f_point : fingerprintList)
       {
          if (f_point.getAverageSignalDiff() < average_signal_difference)
          {

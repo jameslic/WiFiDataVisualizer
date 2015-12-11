@@ -28,8 +28,8 @@ public class WeightedCentroid
     */
    public static Point weightedCentroid(ArrayList<AccessPointObservationRecord> accessPointList, SQLLiteConnection trainingDataBase, Point lastPointApproximation)
    {
-      Collection<FingerprintingPoint> collection = trainingDataBase.getLikeliestPoints(accessPointList).values();
-      ArrayList<FingerprintingPoint> fingerprinting_point_list = new ArrayList<>(collection);
+      Collection<CandidatePoint> collection = trainingDataBase.getLikeliestPoints(accessPointList).values();
+      ArrayList<CandidatePoint> fingerprinting_point_list = new ArrayList<>(collection);
       Collections.sort(fingerprinting_point_list);
       int highest_frequency = fingerprinting_point_list.get(fingerprinting_point_list.size() - 1).getFrequencyCount();
       while (fingerprinting_point_list.get(0).getFrequencyCount() < highest_frequency)
@@ -41,7 +41,7 @@ public class WeightedCentroid
       return getWeightedCentroidEstimation(fingerprinting_point_list, lastPointApproximation);
    }//fingerprint
 
-   public static double getWeightedCoordinateXValue(FingerprintingPoint inputPoint)
+   public static double getWeightedCoordinateXValue(CandidatePoint inputPoint)
    {
       double centroid_x_value = 0;
 
@@ -56,7 +56,7 @@ public class WeightedCentroid
       return centroid_x_value;
    }//getWeightedCoordinateXValue
 
-   public static double getWeightedCoordinateYValue(FingerprintingPoint inputPoint)
+   public static double getWeightedCoordinateYValue(CandidatePoint inputPoint)
    {
       double centroid_y_value = 0;
       for (int i = 0; i < inputPoint.getNumberOfRouters(); ++i)
@@ -80,12 +80,12 @@ public class WeightedCentroid
     *                               final decider when
     * @return the final point approximation
     */
-   public static FingerprintingPoint chooseBestPoint(ArrayList<FingerprintingPoint> fingerprintList, Point lastPointApproximation)
+   public static CandidatePoint chooseBestPoint(ArrayList<CandidatePoint> fingerprintList, Point lastPointApproximation)
    {
       int best_point_index = 0;
       double average_signal_difference = fingerprintList.get(0).getAverageSignalDiff();
       int index_counter = 0;
-      for (FingerprintingPoint f_point : fingerprintList)
+      for (CandidatePoint f_point : fingerprintList)
       {
          if (f_point.getAverageSignalDiff() < average_signal_difference)
          {
@@ -124,10 +124,10 @@ public class WeightedCentroid
     *                               final decider when
     * @return the final point approximation
     */
-   public static Point getWeightedCentroidEstimation(ArrayList<FingerprintingPoint> fingerprintList, Point lastPointApproximation)
+   public static Point getWeightedCentroidEstimation(ArrayList<CandidatePoint> fingerprintList, Point lastPointApproximation)
    {
-      ArrayList<FingerprintingPoint> point_list = new ArrayList<>(Constants.FINGERPRINTING_K_NEAREST_NEIGHBORS);
-      FingerprintingPoint best_training_point = chooseBestPoint(fingerprintList, lastPointApproximation);
+      ArrayList<CandidatePoint> point_list = new ArrayList<>(Constants.FINGERPRINTING_K_NEAREST_NEIGHBORS);
+      CandidatePoint best_training_point = chooseBestPoint(fingerprintList, lastPointApproximation);
       /*while (point_list.size() != Constants.FINGERPRINTING_K_NEAREST_NEIGHBORS)
       {
          int best_point_index = getBestPointIndex(fingerprintList);
@@ -149,12 +149,12 @@ public class WeightedCentroid
       }//else
    }//chooseBestPoint
 
-   public static int getBestPointIndex(ArrayList<FingerprintingPoint> fingerprintList)
+   public static int getBestPointIndex(ArrayList<CandidatePoint> fingerprintList)
    {
       int best_point_index = 0;
       double average_signal_difference = fingerprintList.get(0).getAverageSignalDiff();
       int index_counter = 0;
-      for (FingerprintingPoint f_point : fingerprintList)
+      for (CandidatePoint f_point : fingerprintList)
       {
          if (f_point.getAverageSignalDiff() < average_signal_difference)
          {
@@ -167,7 +167,12 @@ public class WeightedCentroid
       return best_point_index;
    }//getBestPointIndex
 
-   public static Point getWeightedCentroid(FingerprintingPoint dataPoint)
+   /**
+    *
+    * @param dataPoint
+    * @return
+    */
+   public static Point getWeightedCentroid(CandidatePoint dataPoint)
    {
       double centroid_x = getWeightedCoordinateXValue(dataPoint);
       double centroid_y = getWeightedCoordinateYValue(dataPoint);

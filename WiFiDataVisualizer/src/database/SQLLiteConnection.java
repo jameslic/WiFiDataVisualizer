@@ -15,7 +15,11 @@ import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import positioning.AccessPointObservationRecord;
-import positioning.FingerprintingPoint;
+import positioning.CandidatePoint;
+import static java.lang.Math.abs;
+import static java.lang.Math.abs;
+import static java.lang.Math.abs;
+import static java.lang.Math.abs;
 import static java.lang.Math.abs;
 import static java.lang.Math.abs;
 import static java.lang.Math.abs;
@@ -214,7 +218,7 @@ public class SQLLiteConnection
     * @return Map returning the most likely points for the fingerprinting
     *         algorithm between a bounded RSS range
     */
-   public HashMap<String, FingerprintingPoint> getLikeliestPoints(ArrayList<AccessPointObservationRecord> accessPointList)
+   public HashMap<String, CandidatePoint> getLikeliestPoints(ArrayList<AccessPointObservationRecord> accessPointList)
    {
       ArrayList<String> possible_office_list = new ArrayList<>();
       ArrayList<Integer> possible_office_signal_list_diff = new ArrayList<>();
@@ -285,10 +289,10 @@ public class SQLLiteConnection
     * @param originatingSSID       list of the router SSID
     * @return map o
     */
-   private HashMap<String, FingerprintingPoint> getPointsFromOfficeList(ArrayList<String> officeIdList,
+   private HashMap<String, CandidatePoint> getPointsFromOfficeList(ArrayList<String> officeIdList,
            ArrayList<Integer> officeSignalLevelDiff, ArrayList<String> originatingSSID)
    {
-      HashMap<String, FingerprintingPoint> resultant_point_list = new HashMap<>();
+      HashMap<String, CandidatePoint> resultant_point_list = new HashMap<>();
       if (isDatabaseConnected())
       {
          int signal_diff_list_index = 0;
@@ -316,14 +320,14 @@ public class SQLLiteConnection
                      int x = query_result_set.getInt("x");
                      int y = query_result_set.getInt("y");
                      Point office_point = new Point(x, y);
-                     FingerprintingPoint fingerprint_point = new FingerprintingPoint(office_point, office_id_string);
+                     CandidatePoint fingerprint_point = new CandidatePoint(office_point, office_id_string);
                      fingerprint_point.addSignalLevelDiff(originatingSSID.get(signal_diff_list_index),
                                                           officeSignalLevelDiff.get(signal_diff_list_index));
                      resultant_point_list.put(office_id_string, fingerprint_point);
                   }//else
                }//while
                ++signal_diff_list_index;
-            }//for
+            }//for//for
             catch (SQLException ex)
             {
                Logger.getLogger(SQLLiteConnection.class.getName()).log(Level.SEVERE, null, ex);

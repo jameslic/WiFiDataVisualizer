@@ -28,8 +28,8 @@ public class PatternMatching
     */
    public static Point patternMatching(ArrayList<AccessPointObservationRecord> accessPointList, SQLLiteConnection trainingDataBase, Point lastPointApproximation)
    {
-      Collection<FingerprintingPoint> collection = trainingDataBase.getLikeliestPoints(accessPointList).values();
-      ArrayList<FingerprintingPoint> fingerprinting_point_list = new ArrayList<>(collection);
+      Collection<CandidatePoint> collection = trainingDataBase.getLikeliestPoints(accessPointList).values();
+      ArrayList<CandidatePoint> fingerprinting_point_list = new ArrayList<>(collection);
       Collections.sort(fingerprinting_point_list);
       int highest_frequency = fingerprinting_point_list.get(fingerprinting_point_list.size() - 1).getFrequencyCount();
       while (fingerprinting_point_list.get(0).getFrequencyCount() < highest_frequency)
@@ -51,12 +51,12 @@ public class PatternMatching
     *                               final decider when
     * @return the final point approximation
     */
-   public static Point chooseBestPoint(ArrayList<FingerprintingPoint> fingerprintList, Point lastPointApproximation)
+   public static Point chooseBestPoint(ArrayList<CandidatePoint> fingerprintList, Point lastPointApproximation)
    {
       int best_point_index = 0;
       double average_signal_difference = fingerprintList.get(0).getAverageSignalDiff();
       int index_counter = 0;
-      for (FingerprintingPoint f_point : fingerprintList)
+      for (CandidatePoint f_point : fingerprintList)
       {
          if (f_point.getAverageSignalDiff() < average_signal_difference)
          {
