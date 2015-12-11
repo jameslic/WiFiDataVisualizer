@@ -39,6 +39,33 @@ public class Constants
    //Weighted Centroid
    final public static int WEIGHTED_CENTROID_NUMBER_OF_POINTS = 4;
 
+   //Training Data Points
+   final public static int DEFAULT_TRAINING_DATA_POINT_SIZE = 16;
+   final public static int DEFAULT_TRAINING_DATA_POINT_MIDPOINT = 8;
+
+   //Router (Access Point) Points
+   final public static int DEFAULT_ROUTER_POINT_X_OFFSET = 21;
+   final public static int DEFAULT_ROUTER_POINT_Y_OFFSET = 12;
+   final public static int DEFAULT_ROUTER_POINT_WIDTH = 52;
+   final public static int DEFAULT_ROUTER_POINT_HEIGHT = 31;
+
+   //Range Rings
+   final public static int DEFAULT_RANGE_RING_SIZE = 250;
+   final public static int DEFAULT_RANGE_RING_OFFSET = 125;
+   final public static int DEFAULT_RANGE_RING_LINE_WIDTH = 5;
+
+   //Point Font
+   final public static int DEFAULT_POINT_LABEL_FONT_SIZE = 24;
+   final public static int DEFAULT_POINT_LABEL_FONT_Y_OFFSET = 10;
+
+   //Points
+   final public static int DEFAULT_POINT_CIRCLE_SIZE = 24;
+   final public static int DEFAULT_POINT_OFFSET = 12;
+
+   //Calibration Point
+   final public static int DEFAULT_CALIBRATION_POINT_CIRCLE_SIZE = 16;
+   final public static int DEFAULT_CALIBRATION_POINT_CIRCLE_OFFSET = 8;
+
    public static Map<String, Double> getRouterWeightMap()
    {
       Map<String, Double> result = new HashMap<>();

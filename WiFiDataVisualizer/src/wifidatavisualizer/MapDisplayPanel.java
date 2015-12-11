@@ -167,8 +167,7 @@ public class MapDisplayPanel
          {
             if (this.mRouterImageBoundedRectangleList.get(i).contains(test_point))
             {
-               int router_index = 1200 + i;
-               JOptionPane.showMessageDialog(null, "Router: CiscoLinksysE" + router_index + " X,Y: ("
+               JOptionPane.showMessageDialog(null, "Router: " + Constants.ROUTER_PREFIX_SSID + i + " X,Y: ("
                                              + mRouterPointList.get(i).x + "," + mRouterPointList.get(i).y + ")");
             }//if
          }//for
@@ -204,7 +203,7 @@ public class MapDisplayPanel
    }//addNewWiFiLocalizationPoint
 
    /**
-    * Overriden paint function for the glass layer. Renders the appropriate
+    * Overridden paint function for the glass layer. Renders the appropriate
     * position estimations and range rings
     *
     * @param graphicsComponent      the GUI graphics component to create the @D
@@ -221,7 +220,7 @@ public class MapDisplayPanel
       ///ArrayList<Point> map_points_of_interest_list = mMapPointsOfInterestList.get((JLayer) inputMapLayerComponent);
       for (NewWifiDataListener.WifiDataType type : NewWifiDataListener.WifiDataType.values())
       {
-         ArrayList<Point> points_to_draw = new ArrayList<Point>();
+         ArrayList<Point> points_to_draw = new ArrayList<>();
          //Choose the color based on the algorithm
          switch (type)
          {
@@ -258,16 +257,22 @@ public class MapDisplayPanel
                ++point_counter;
                if (point_counter < mNumberOfPointsToDisplay)
                {
-                  graphics_2d_utility.fillOval(p.x - 12, p.y - 12, 24, 24);
-                  this.mBoundsCheckOval = new Ellipse2D.Double(p.x - 125, p.y - 125, 250, 250);
+                  graphics_2d_utility.fillOval(p.x - Constants.DEFAULT_POINT_OFFSET,
+                                               p.y - Constants.DEFAULT_POINT_OFFSET,
+                                               Constants.DEFAULT_POINT_CIRCLE_SIZE,
+                                               Constants.DEFAULT_POINT_CIRCLE_SIZE);
+                  this.mBoundsCheckOval = new Ellipse2D.Double(p.x - Constants.DEFAULT_RANGE_RING_OFFSET,
+                                                               p.y - Constants.DEFAULT_RANGE_RING_OFFSET,
+                                                               Constants.DEFAULT_RANGE_RING_SIZE,
+                                                               Constants.DEFAULT_RANGE_RING_SIZE);
                   if (points_to_draw.size() == point_counter)
                   {
                      graphics_2d_utility.setStroke(new BasicStroke(5));
                      graphics_2d_utility.draw(mBoundsCheckOval);
                   }//if
-                  Font f = new Font("Dialog", Font.BOLD, 24);
+                  Font f = new Font("Dialog", Font.BOLD, Constants.DEFAULT_POINT_LABEL_FONT_SIZE);
                   graphics_2d_utility.setFont(f);
-                  graphics_2d_utility.drawString(String.valueOf(point_counter), p.x, p.y - 10);
+                  graphics_2d_utility.drawString(String.valueOf(point_counter), p.x, p.y - Constants.DEFAULT_POINT_LABEL_FONT_Y_OFFSET);
                }//if
             }//for
          }//if
@@ -298,10 +303,16 @@ public class MapDisplayPanel
          {
             if (this.mRouterImageBoundedRectangleList.size() < mRouterPointList.size())
             {
-               Rectangle2D.Double rectangle2d = new Rectangle2D.Double(p.getX() - 21, p.getY() - 12, 52, 31);
+               Rectangle2D.Double rectangle2d = new Rectangle2D.Double(p.getX() - Constants.DEFAULT_ROUTER_POINT_X_OFFSET,
+                                                                       p.getY() - Constants.DEFAULT_ROUTER_POINT_Y_OFFSET,
+                                                                       Constants.DEFAULT_ROUTER_POINT_WIDTH,
+                                                                       Constants.DEFAULT_ROUTER_POINT_HEIGHT);
                this.mRouterImageBoundedRectangleList.add(rectangle2d);
             }
-            graphics2DUtility.drawImage(this.mRouterImageList.get(image_number), p.x - 21, p.y - 12, mainComponent);
+            graphics2DUtility.drawImage(this.mRouterImageList.get(image_number),
+                                        p.x - Constants.DEFAULT_ROUTER_POINT_X_OFFSET,
+                                        p.y - Constants.DEFAULT_ROUTER_POINT_Y_OFFSET,
+                                        mainComponent);
             ++image_number;
          }//for
       }//if
@@ -319,9 +330,11 @@ public class MapDisplayPanel
       if (mTrainingDataPointList != null && mTrainingDataPointList.size() > 0)
       {
          graphics2DUtility.setColor(Color.BLUE);
-         for (Point p : mTrainingDataPointList)
+         for (Point training_point : mTrainingDataPointList)
          {
-            graphics2DUtility.fillOval(p.x - 8, p.y - 8, 16, 16);
+            graphics2DUtility.fillOval(training_point.x - Constants.DEFAULT_TRAINING_DATA_POINT_MIDPOINT,
+                                       training_point.y - Constants.DEFAULT_TRAINING_DATA_POINT_MIDPOINT,
+                                       Constants.DEFAULT_TRAINING_DATA_POINT_SIZE, Constants.DEFAULT_TRAINING_DATA_POINT_SIZE);
          }//for
       }//if
    }//paintTrainingData
@@ -338,10 +351,13 @@ public class MapDisplayPanel
       if (this.mCalibrationStartPoint != null)
       {
          graphics2DUtility.setColor(Color.ORANGE);
-         graphics2DUtility.fillOval(this.mCalibrationStartPoint.x - 8, this.mCalibrationStartPoint.y - 8, 16, 16);
+         graphics2DUtility.fillOval(this.mCalibrationStartPoint.x - Constants.DEFAULT_CALIBRATION_POINT_CIRCLE_OFFSET,
+                                    this.mCalibrationStartPoint.y - Constants.DEFAULT_CALIBRATION_POINT_CIRCLE_OFFSET,
+                                    Constants.DEFAULT_CALIBRATION_POINT_CIRCLE_SIZE,
+                                    Constants.DEFAULT_CALIBRATION_POINT_CIRCLE_SIZE);
          this.mBoundsCheckOval = new Ellipse2D.Double(this.mCalibrationStartPoint.x - 125, this.mCalibrationStartPoint.y - 125, 250, 250);
          graphics2DUtility.setColor(Color.ORANGE);
-         graphics2DUtility.setStroke(new BasicStroke(5));
+         graphics2DUtility.setStroke(new BasicStroke(Constants.DEFAULT_RANGE_RING_LINE_WIDTH));
          graphics2DUtility.draw(mBoundsCheckOval);
       }//if
    }//paintCalibrationStartingPoint
@@ -368,7 +384,7 @@ public class MapDisplayPanel
          this.mNumberOfPointsToDisplay = point_list.size();
       }//if
       this.mMapPointsOfInterestList.put(dataType, point_list);
-      //mMapPointsOfInterestList.p
+      //mMapPointsOfInterestList.training_point
    }//newWifiData
 
    /**
