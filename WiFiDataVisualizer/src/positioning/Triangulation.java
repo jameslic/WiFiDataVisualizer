@@ -1,7 +1,5 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Class that attempts to triangulate position based on 3 observations
  */
 package positioning;
 
@@ -9,11 +7,19 @@ import java.awt.Point;
 import java.util.ArrayList;
 
 /**
+ * Class with static methods for manipulating wifi data using Triangulation
+ * techniques
  *
  * @author James Licata
  */
 public class Triangulation
 {
+   /**
+    * Attempts to use Cramer's rule to help triangulate a point estimation
+    *
+    * @param accessPointList the list of access point observations
+    * @return
+    */
    public static Point triangulate(ArrayList<AccessPointObservationRecord> accessPointList)
    {
       Point resultant_point = new Point(0, 0);

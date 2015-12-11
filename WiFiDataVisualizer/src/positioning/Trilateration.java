@@ -1,7 +1,5 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Class that attempts to use trilateration to estimate position from wifi data
  */
 package positioning;
 
@@ -10,11 +8,20 @@ import java.awt.geom.Ellipse2D;
 import java.util.ArrayList;
 
 /**
+ * Class with static methods for manipulating wifi data using pattern matching
+ * techniques
  *
  * @author James Licata
  */
 public class Trilateration
 {
+   /**
+    * Finds the center approximation given error elipses
+    *
+    * @param apErrorEllipses the elipses around candidate point sfrom which to
+    *                        estimate a new position
+    * @return a 2D point estimation
+    */
    public static Point findCenter(ArrayList<Ellipse2D> apErrorEllipses)
    {
       double top = 0;
@@ -68,6 +75,13 @@ public class Trilateration
       return resultant_point;
    }//findCenter
 
+   /**
+    * Given a list of access point observations, determines a center point
+    * estimation
+    *
+    * @param accessPointList the access point observation record list
+    * @return a 2D point estimation
+    */
    public static Point findCenterPoint(ArrayList<AccessPointObservationRecord> accessPointList)
    {
       double top = 0;

@@ -4,7 +4,6 @@
 package database;
 
 import java.awt.Point;
-import static java.lang.Math.abs;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -16,12 +15,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import positioning.AccessPointObservationRecord;
 import positioning.CandidatePoint;
-import static java.lang.Math.abs;
-import static java.lang.Math.abs;
-import static java.lang.Math.abs;
-import static java.lang.Math.abs;
-import static java.lang.Math.abs;
-import static java.lang.Math.abs;
 import static java.lang.Math.abs;
 
 /**

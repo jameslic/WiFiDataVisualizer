@@ -267,7 +267,7 @@ public class MapDisplayPanel
                                                                Constants.DEFAULT_RANGE_RING_SIZE);
                   if (points_to_draw.size() == point_counter)
                   {
-                     graphics_2d_utility.setStroke(new BasicStroke(5));
+                     graphics_2d_utility.setStroke(new BasicStroke(Constants.DEFAULT_RANGE_RING_LINE_WIDTH));
                      graphics_2d_utility.draw(mBoundsCheckOval);
                   }//if
                   Font f = new Font("Dialog", Font.BOLD, Constants.DEFAULT_POINT_LABEL_FONT_SIZE);
