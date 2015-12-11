@@ -45,21 +45,30 @@ public class MapView
    JLabel mIndoorMap = new JLabel();
    //SQLLite Connection for connecting to the training data set
    SQLLiteConnection mSqlLiteConnection = new SQLLiteConnection();
-   //LayerUI<JLabel> mMapDisplayPanel;
+   //Glass display panel
    MapDisplayPanel mMapDisplayPanel;
    JLayer<JLabel> mMapDisplayLayer;
+   //Wifi Data Reader
    WifiDataReader mWifiDataReader = new WifiDataReader();
+   //Router SSID to parsed CSV record map
    HashMap<String, Iterable<CSVRecord>> mSsidCsvRecordMap = new HashMap<>();
+   //Router Timestamp to RSS value maps
    TreeMap<Integer, Integer> mRouter0TimestampRSSPairs = new TreeMap();
    TreeMap<Integer, Integer> mRouter1TimestampRSSPairs = new TreeMap();
    TreeMap<Integer, Integer> mRouter2TimestampRSSPairs = new TreeMap();
    TreeMap<Integer, Integer> mRouter3TimestampRSSPairs = new TreeMap();
+   //CSV Input file path prefix member variable
    String mCsvInputFilePathPrefix = "";
+   //Router point array list
    ArrayList<Point> mRouterPointList;
+   //Wifi data listeners array list
    ArrayList<NewWifiDataListener> mWifiDataListeners;
+   //Slider Value for DVR playback member variable
    int mSliderValue = 0;
+   //Playback timer used for firing events related to the DVR
    Timer mPlaybackTimer;
    int mTotalNumberOfDataPoints = 0;
+   //Member variables to keep track of the last point estimation using the given algorithm
    Point mLastFingerprintingPoint = new Point(0, 0);
    Point mLastWeightedCentroidPoint = new Point(0, 0);
    Point mLastPatternMatchingPoint = new Point(0, 0);
@@ -692,7 +701,8 @@ public class MapView
       this.mPlaybackDataButton.setEnabled(false);
       this.mSliderValue = 0;
       this.mNumberOfDataPointsSlider.setValue(mSliderValue);
-      mPlaybackTimer = new Timer((this.mPlaybackSpeedSecondsChooser.getSelectedIndex() + 1) * 1000, this);
+      int timer_value = (this.mPlaybackSpeedSecondsChooser.getSelectedIndex() + 1) * 1000;
+      mPlaybackTimer = new Timer(timer_value, this);
       mPlaybackTimer.start();
    }//GEN-LAST:event_mPlaybackDataButtonActionPerformed
 
@@ -721,17 +731,6 @@ public class MapView
          mPatternMatchingMenuItem.setSelected(true);
       }//else
    }//GEN-LAST:event_mPatternMatchingMenuItemActionPerformed
-
-   private void printSubMap(SortedMap<Integer, Integer> submap, int index)
-   {
-      if (submap.size() > 0)
-      {
-         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "*********\nCiscoLinksysE120{0}\n********", index);
-         Entry<Integer, Integer> router0_entry = submap.entrySet().iterator().next();
-         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "Timestamp: {0}", router0_entry.getKey());
-         java.util.logging.Logger.getLogger(MapView.class.getName()).log(java.util.logging.Level.INFO, "RSS: {0}", router0_entry.getValue());
-      }//if
-   }//printSubmMap
 
    /**
     * Given the known data points, makes an approximation using the available
@@ -953,15 +952,17 @@ public class MapView
    public void actionPerformed(ActionEvent e)
    {
       ++mSliderValue;
-      if (this.mSliderValue < mTotalNumberOfDataPoints)
+      if (this.mSliderValue <= mTotalNumberOfDataPoints + 1)
       {
          this.mNumberOfDataPointsSlider.setValue(mSliderValue);
-         this.displayNPoints(mSliderValue);
+         this.displayNPoints(mSliderValue + 1);
          this.repaint();
       }//if
       else
       {
          this.mPlaybackTimer.stop();
+         this.mPlaybackDataButton.setEnabled(true);
+         this.mStopPlaybackButton.setEnabled(false);
       }//else
    }//actionPerformed
 }//MapView
