@@ -8,6 +8,7 @@ import java.awt.GridBagLayout;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
 import java.util.ArrayList;
@@ -16,9 +17,11 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JLayer;
 import javax.swing.JLayeredPane;
+import javax.swing.JOptionPane;
 import javax.swing.Timer;
 import org.apache.commons.csv.CSVRecord;
 import positioning.AccessPointObservationRecord;
@@ -31,6 +34,10 @@ import wifidatavisualizer.MapDisplayPanel;
 import wifidatavisualizer.WifiDataReader;
 import wifidatavisualizer.NewWifiDataListener;
 import wifidatavisualizer.Constants;
+import wifidatavisualizer.ExportAlgorithmEstimatePointsListener;
+import wifidatavisualizer.NewTruthPathDataListener;
+import wifidatavisualizer.NewWifiDataListener.WifiDataType;
+import wifidatavisualizer.TruthPathDataReader;
 
 /**
  * Main GUI class, displays map, location predictions, provides DVR controls
@@ -63,6 +70,8 @@ public class MapView
    ArrayList<Point> mRouterPointList;
    //Wifi data listeners array list
    ArrayList<NewWifiDataListener> mWifiDataListeners;
+   ArrayList<NewTruthPathDataListener> mTruthPathDataListeners;
+   ArrayList<ExportAlgorithmEstimatePointsListener> mExportAlgorithmEstimatePointsListeners;
    //Slider Value for DVR playback member variable
    int mSliderValue = 0;
    //Playback timer used for firing events related to the DVR
@@ -72,18 +81,22 @@ public class MapView
    Point mLastFingerprintingPoint = new Point(0, 0);
    Point mLastWeightedCentroidPoint = new Point(0, 0);
    Point mLastPatternMatchingPoint = new Point(0, 0);
+   TruthPathDataReader mTruthPathDataReader = new TruthPathDataReader();
+   int mWifiDataTimeStampIntervalMilliseconds = Constants.DEFAULT_WIFI_DATA_COLLECTION_INTERVAL_MILLISECONDS;
 
    /**
     * Creates new form MapView, default constructor
     */
    public MapView()
    {
-      this.mWifiDataListeners = new ArrayList<>();
+      mWifiDataListeners = new ArrayList<>();
+      mTruthPathDataListeners = new ArrayList<>();
+      mExportAlgorithmEstimatePointsListeners = new ArrayList<>();
       initComponents();
-      this.setLayout(new GridBagLayout());
-      this.mStopPlaybackButton.setEnabled(false);
+      setLayout(new GridBagLayout());
+      mStopPlaybackButton.setEnabled(false);
 
-      this.mSliderValue = this.mNumberOfDataPointsSlider.getValue();
+      mSliderValue = this.mNumberOfDataPointsSlider.getValue();
       ArrayList<String> router_resource_path = new ArrayList<>();
       for (int i = 0; i < 4; ++i)
       {
@@ -96,7 +109,7 @@ public class MapView
       mRouterPointList = mSqlLiteConnection.loadRouterPointLocations();
       mMapDisplayPanel = new MapDisplayPanel(mSqlLiteConnection.loadTrainingPointLocations(), mRouterPointList, router_resource_path);
       mIndoorMap.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Bld2_ULQuadrantLabelsRemoved.PNG"))); // NOI18N
-      this.addListener(mMapDisplayPanel);
+      this.addListener(mMapDisplayPanel, mMapDisplayPanel, mMapDisplayPanel);
       mMapDisplayLayer = new JLayer<>(this.mIndoorMap, mMapDisplayPanel);
       this.add(mMapDisplayLayer);
       this.pack();
@@ -109,9 +122,11 @@ public class MapView
     *
     * @param listenerToAdd the listener to add
     */
-   public void addListener(NewWifiDataListener listenerToAdd)
+   public void addListener(NewWifiDataListener wifiListener, NewTruthPathDataListener truthPathListener, ExportAlgorithmEstimatePointsListener exportAlgorithmEstimatePointsListener)
    {
-      mWifiDataListeners.add(listenerToAdd);
+      mWifiDataListeners.add(wifiListener);
+      mTruthPathDataListeners.add(truthPathListener);
+      mExportAlgorithmEstimatePointsListeners.add(exportAlgorithmEstimatePointsListener);
    }//addListener
 
    /**
@@ -141,6 +156,22 @@ public class MapView
          hl.newWifiData(newData, dataType);
       }//for
    }//newWifiData
+
+   public void newTruthPathData(ArrayList<Point> truthPathData)
+   {
+      for (NewTruthPathDataListener h1 : this.mTruthPathDataListeners)
+      {
+         h1.newTruthPath(truthPathData);
+      }//for
+   }//newTruthPathData
+
+   public void newExportAlgorithmEstimateRequest(WifiDataType dataType)
+   {
+      for (ExportAlgorithmEstimatePointsListener h1 : this.mExportAlgorithmEstimatePointsListeners)
+      {
+         h1.exportAlgorithmEstimatePoints(dataType);
+      }//for
+   }//newTruthPathData
 
    /**
     * Function used by DVR functionality to display a certain number of data
@@ -188,7 +219,7 @@ public class MapView
     * @param routerPrefix    the SSID prefix of the routers
     * @param numberOfRouters the number of CSV router files
     */
-   private void generateCSVInputFileList(String pathPrefix, String dataPath, String routerPrefix, int numberOfRouters)
+   private void generateDefaultCSVInputFileList(String pathPrefix, String dataPath, String routerPrefix, int numberOfRouters)
    {
       HashMap<String, String> csv_input_map = new HashMap<>();
       for (int i = 0; i < numberOfRouters; ++i)
@@ -196,15 +227,54 @@ public class MapView
          String resource_string_path = pathPrefix + dataPath + routerPrefix + i + Constants.DEFAULT_DATA_FILE_EXTENSION;
          csv_input_map.put(routerPrefix + i, resource_string_path);
       }//for
+      mLoadedWifiDataPathLabel.setText(pathPrefix + dataPath);
+      this.mWifiDataReader.openCSVFiles(csv_input_map);
+   }//generateCSVInputFileList
+
+   private void generateCSVInputFileList(File[] fileList, String routerPrefix)
+   {
+      HashMap<String, String> csv_input_map = new HashMap<>();
+      for (File csv_file : fileList)
+      {
+         String file_name = csv_file.getName();
+         if (file_name.contains(routerPrefix + "0"))
+         {
+            csv_input_map.put(routerPrefix + "0", csv_file.getAbsolutePath());
+            mLoadedWifiDataPathLabel.setText(csv_file.getPath());
+         }
+         else if (file_name.contains(routerPrefix + "1"))
+         {
+            csv_input_map.put(routerPrefix + "1", csv_file.getAbsolutePath());
+         }
+         else if (file_name.contains(routerPrefix + "2"))
+         {
+            csv_input_map.put(routerPrefix + "2", csv_file.getAbsolutePath());
+         }
+         else if (file_name.contains(routerPrefix + "3"))
+         {
+            csv_input_map.put(routerPrefix + "3", csv_file.getAbsolutePath());
+         }
+         else
+         {
+
+         }
+      }
       this.mWifiDataReader.openCSVFiles(csv_input_map);
    }//generateCSVInputFileList
 
    /**
     * Parses the CSV file records
     */
-   private void parseCSVRecords()
+   private void parseCSVRecords(File[] chosenFiles)
    {
-      generateCSVInputFileList(mCsvInputFilePathPrefix, Constants.DEFAULT_DATA_PATH, Constants.ROUTER_PREFIX_SSID, Constants.DEFAULT_NUMBER_OF_ROUTERS);
+      if (chosenFiles.length != Constants.DEFAULT_NUMBER_OF_ROUTERS)
+      {
+         generateDefaultCSVInputFileList(mCsvInputFilePathPrefix, Constants.DEFAULT_DATA_PATH, Constants.ROUTER_PREFIX_SSID, Constants.DEFAULT_NUMBER_OF_ROUTERS);
+      }//if
+      else
+      {
+         generateCSVInputFileList(chosenFiles, Constants.ROUTER_PREFIX_SSID);
+      }
       for (int i = 0; i < 4; ++i)
       {
          mSsidCsvRecordMap.put(Constants.ROUTER_PREFIX_SSID + i, mWifiDataReader.parseRecords(Constants.ROUTER_PREFIX_SSID + i));
@@ -266,10 +336,17 @@ public class MapView
       mPlaybackDataButton = new javax.swing.JButton();
       mPlaybackSpeedSecondsChooser = new javax.swing.JComboBox();
       mPlaybackSpeedLabel = new javax.swing.JLabel();
+      mLoadedTruthPathPanel = new javax.swing.JPanel();
+      mLoadedTruthPathFileName = new javax.swing.JLabel();
+      mLoadedWifiDataPathPanel = new javax.swing.JPanel();
+      jScrollPane1 = new javax.swing.JScrollPane();
+      mLoadedWifiDataPathLabel = new javax.swing.JTextArea();
       jMenuBar1 = new javax.swing.JMenuBar();
       mFileMenu = new javax.swing.JMenu();
       mSelectMapViewItem = new javax.swing.JMenuItem();
       mLoadWifiDataMenuItem = new javax.swing.JMenuItem();
+      mLoadPathMenuItem = new javax.swing.JMenuItem();
+      mExportCurrentAlgorithmOutput = new javax.swing.JMenuItem();
       mAlgorithmSelectorMenu = new javax.swing.JMenu();
       mFingerprintingMenuItem = new javax.swing.JCheckBoxMenuItem();
       mPatternMatchingMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -287,7 +364,8 @@ public class MapView
          }
       });
 
-      mNumberOfDataPointsSlider.setMajorTickSpacing(2);
+      mNumberOfDataPointsSlider.setMajorTickSpacing(5);
+      mNumberOfDataPointsSlider.setMaximum(125);
       mNumberOfDataPointsSlider.setMinorTickSpacing(1);
       mNumberOfDataPointsSlider.setOrientation(javax.swing.JSlider.VERTICAL);
       mNumberOfDataPointsSlider.setPaintLabels(true);
@@ -338,7 +416,7 @@ public class MapView
                .addComponent(jLabel2)
                .addComponent(jLabel3)
                .addComponent(mPatternMatchingLabel))
-            .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addContainerGap(39, Short.MAX_VALUE))
       );
       mMapLegendPanelLayout.setVerticalGroup(
          mMapLegendPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -413,6 +491,51 @@ public class MapView
             .addContainerGap())
       );
 
+      mLoadedTruthPathPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Loaded Truth Path", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Tahoma", 1, 13))); // NOI18N
+
+      mLoadedTruthPathFileName.setFont(new java.awt.Font("Tahoma", 0, 10)); // NOI18N
+      mLoadedTruthPathFileName.setText("None");
+
+      javax.swing.GroupLayout mLoadedTruthPathPanelLayout = new javax.swing.GroupLayout(mLoadedTruthPathPanel);
+      mLoadedTruthPathPanel.setLayout(mLoadedTruthPathPanelLayout);
+      mLoadedTruthPathPanelLayout.setHorizontalGroup(
+         mLoadedTruthPathPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+         .addGroup(mLoadedTruthPathPanelLayout.createSequentialGroup()
+            .addContainerGap()
+            .addComponent(mLoadedTruthPathFileName, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+      );
+      mLoadedTruthPathPanelLayout.setVerticalGroup(
+         mLoadedTruthPathPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+         .addGroup(mLoadedTruthPathPanelLayout.createSequentialGroup()
+            .addGap(29, 29, 29)
+            .addComponent(mLoadedTruthPathFileName)
+            .addContainerGap(55, Short.MAX_VALUE))
+      );
+
+      mLoadedWifiDataPathPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Loaded Wifi Data Path", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Tahoma", 1, 13))); // NOI18N
+
+      mLoadedWifiDataPathLabel.setBackground(new java.awt.Color(240, 240, 240));
+      mLoadedWifiDataPathLabel.setColumns(20);
+      mLoadedWifiDataPathLabel.setFont(new java.awt.Font("Tahoma", 0, 10)); // NOI18N
+      mLoadedWifiDataPathLabel.setLineWrap(true);
+      mLoadedWifiDataPathLabel.setRows(5);
+      mLoadedWifiDataPathLabel.setAutoscrolls(false);
+      jScrollPane1.setViewportView(mLoadedWifiDataPathLabel);
+
+      javax.swing.GroupLayout mLoadedWifiDataPathPanelLayout = new javax.swing.GroupLayout(mLoadedWifiDataPathPanel);
+      mLoadedWifiDataPathPanel.setLayout(mLoadedWifiDataPathPanelLayout);
+      mLoadedWifiDataPathPanelLayout.setHorizontalGroup(
+         mLoadedWifiDataPathPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+         .addGroup(mLoadedWifiDataPathPanelLayout.createSequentialGroup()
+            .addContainerGap()
+            .addComponent(jScrollPane1)
+            .addContainerGap())
+      );
+      mLoadedWifiDataPathPanelLayout.setVerticalGroup(
+         mLoadedWifiDataPathPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+         .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 111, Short.MAX_VALUE)
+      );
+
       javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
       jPanel1.setLayout(jPanel1Layout);
       jPanel1Layout.setHorizontalGroup(
@@ -423,23 +546,27 @@ public class MapView
             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                .addComponent(mMapLegendPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-               .addComponent(mPlaybackControlsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+               .addComponent(mPlaybackControlsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+               .addComponent(mLoadedTruthPathPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+               .addComponent(mLoadedWifiDataPathPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addContainerGap(56, Short.MAX_VALUE))
       );
       jPanel1Layout.setVerticalGroup(
          jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
          .addGroup(jPanel1Layout.createSequentialGroup()
-            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-               .addGroup(jPanel1Layout.createSequentialGroup()
-                  .addGap(58, 58, 58)
-                  .addComponent(mPlaybackControlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                  .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                  .addComponent(mMapLegendPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 149, javax.swing.GroupLayout.PREFERRED_SIZE)
-                  .addGap(0, 0, Short.MAX_VALUE))
-               .addGroup(jPanel1Layout.createSequentialGroup()
-                  .addContainerGap()
-                  .addComponent(mNumberOfDataPointsSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 765, Short.MAX_VALUE)))
+            .addContainerGap()
+            .addComponent(mNumberOfDataPointsSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 765, Short.MAX_VALUE)
             .addContainerGap())
+         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+            .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(mLoadedWifiDataPathPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGap(18, 18, 18)
+            .addComponent(mLoadedTruthPathPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGap(18, 18, 18)
+            .addComponent(mPlaybackControlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGap(18, 18, 18)
+            .addComponent(mMapLegendPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 149, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGap(89, 89, 89))
       );
 
       mFileMenu.setText("File");
@@ -476,6 +603,26 @@ public class MapView
          }
       });
       mFileMenu.add(mLoadWifiDataMenuItem);
+
+      mLoadPathMenuItem.setText("Load Truth Path");
+      mLoadPathMenuItem.addActionListener(new java.awt.event.ActionListener()
+      {
+         public void actionPerformed(java.awt.event.ActionEvent evt)
+         {
+            mLoadPathMenuItemActionPerformed(evt);
+         }
+      });
+      mFileMenu.add(mLoadPathMenuItem);
+
+      mExportCurrentAlgorithmOutput.setText("Export Current Algorithm Output");
+      mExportCurrentAlgorithmOutput.addActionListener(new java.awt.event.ActionListener()
+      {
+         public void actionPerformed(java.awt.event.ActionEvent evt)
+         {
+            mExportCurrentAlgorithmOutputActionPerformed(evt);
+         }
+      });
+      mFileMenu.add(mExportCurrentAlgorithmOutput);
 
       jMenuBar1.add(mFileMenu);
 
@@ -536,7 +683,7 @@ public class MapView
          layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
          .addGroup(layout.createSequentialGroup()
             .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addGap(0, 894, Short.MAX_VALUE))
+            .addGap(0, 867, Short.MAX_VALUE))
       );
       layout.setVerticalGroup(
          layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -578,16 +725,24 @@ public class MapView
    private void mLoadWifiDataMenuItemActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mLoadWifiDataMenuItemActionPerformed
    {//GEN-HEADEREND:event_mLoadWifiDataMenuItemActionPerformed
       //Read in the input data
-      parseCSVRecords();
+      JFileChooser csv_data_collect_chooser = new JFileChooser();
+      csv_data_collect_chooser.setMultiSelectionEnabled(true);
+      csv_data_collect_chooser.showOpenDialog(this);
+      File[] files = csv_data_collect_chooser.getSelectedFiles();
+      parseCSVRecords(files);
+      int ans = Integer.parseInt(JOptionPane.showInputDialog(null, "Please input the wifi data collection interval in seconds"));
+      if (ans <= 10 && ans >= 0)
+      {
+         this.mWifiDataTimeStampIntervalMilliseconds = ans * 1000;
+      }
       mLastFingerprintingPoint = this.mMapDisplayPanel.getCalibrationStartingPoint();
       mLastWeightedCentroidPoint = this.mMapDisplayPanel.getCalibrationStartingPoint();
       mLastPatternMatchingPoint = this.mMapDisplayPanel.getCalibrationStartingPoint();
-      //After it is read to process, start looking through it at the input interval
       if (mRouter0TimestampRSSPairs.size() > 0)
       {
          int start_timestamp = getEarliestTimestampFromRouters();
          int end_timestamp = getLatestTimestampFromRouters();
-         for (int timestamp_reference = start_timestamp; timestamp_reference < end_timestamp + 500; timestamp_reference += 5000)
+         for (int timestamp_reference = start_timestamp; timestamp_reference < end_timestamp + 500; timestamp_reference += mWifiDataTimeStampIntervalMilliseconds)
          {
             ArrayList<SortedMap<Integer, Integer>> mSubmapArrayList = new ArrayList<>();
             mSubmapArrayList.add(mRouter0TimestampRSSPairs.subMap(timestamp_reference - 500, timestamp_reference + 500));
@@ -731,6 +886,49 @@ public class MapView
          mPatternMatchingMenuItem.setSelected(true);
       }//else
    }//GEN-LAST:event_mPatternMatchingMenuItemActionPerformed
+
+   private void mLoadPathMenuItemActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mLoadPathMenuItemActionPerformed
+   {//GEN-HEADEREND:event_mLoadPathMenuItemActionPerformed
+      // TODO add your handling code here:
+      JFileChooser truth_path_chooser = new JFileChooser();
+      int result = truth_path_chooser.showOpenDialog(this);
+      if (result == JFileChooser.APPROVE_OPTION)
+      {
+         File selectedFile = truth_path_chooser.getSelectedFile();
+         mTruthPathDataReader.openCSVFile(selectedFile.getAbsolutePath());
+         newTruthPathData(mTruthPathDataReader.parseDataPoints());
+         mLoadedTruthPathFileName.setText(selectedFile.getName());
+         System.out.println("Selected file: " + selectedFile.getAbsolutePath());
+      }//if
+
+   }//GEN-LAST:event_mLoadPathMenuItemActionPerformed
+
+   private void mExportCurrentAlgorithmOutputActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_mExportCurrentAlgorithmOutputActionPerformed
+   {//GEN-HEADEREND:event_mExportCurrentAlgorithmOutputActionPerformed
+      // TODO add your handling code here:
+      WifiDataType wifi_data_type = WifiDataType.DEFAULT;
+      if (mFingerprintingMenuItem.isSelected())
+      {
+         wifi_data_type = WifiDataType.FINGERPRINTING;
+      }
+      if (mTrilaterationMenuItem.isSelected())
+      {
+         wifi_data_type = WifiDataType.TRILATERATION;
+      }
+      if (mPatternMatchingMenuItem.isSelected())
+      {
+         wifi_data_type = WifiDataType.PATTERN_MATCHING;
+      }
+      if (mTrilaterationMenuItem.isSelected())
+      {
+         wifi_data_type = WifiDataType.TRILATERATION;
+      }
+      if (mWeightedCentroidMenuItem.isSelected())
+      {
+         wifi_data_type = WifiDataType.WEIGHTED_CENTROID;
+      }
+      newExportAlgorithmEstimateRequest(wifi_data_type);
+   }//GEN-LAST:event_mExportCurrentAlgorithmOutputActionPerformed
 
    /**
     * Given the known data points, makes an approximation using the available
@@ -925,10 +1123,17 @@ public class MapView
    private javax.swing.JLabel jLabel4;
    private javax.swing.JMenuBar jMenuBar1;
    private javax.swing.JPanel jPanel1;
+   private javax.swing.JScrollPane jScrollPane1;
    private javax.swing.JMenu mAlgorithmSelectorMenu;
+   private javax.swing.JMenuItem mExportCurrentAlgorithmOutput;
    private javax.swing.JMenu mFileMenu;
    private javax.swing.JCheckBoxMenuItem mFingerprintingMenuItem;
+   private javax.swing.JMenuItem mLoadPathMenuItem;
    private javax.swing.JMenuItem mLoadWifiDataMenuItem;
+   private javax.swing.JLabel mLoadedTruthPathFileName;
+   private javax.swing.JPanel mLoadedTruthPathPanel;
+   private javax.swing.JTextArea mLoadedWifiDataPathLabel;
+   private javax.swing.JPanel mLoadedWifiDataPathPanel;
    private javax.swing.JPanel mMapLegendPanel;
    private javax.swing.JSlider mNumberOfDataPointsSlider;
    private javax.swing.JLabel mPatternMatchingLabel;

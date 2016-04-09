@@ -23,6 +23,8 @@ public class Constants
    final public static int DEFAULT_CALIBRATION_START_POINT_X_COORDINATE = 1081;
    final public static int DEFAULT_CALIBRATION_START_POINT_Y_COORDINATE = 518;
 
+   final public static int DEFAULT_WIFI_DATA_COLLECTION_INTERVAL_MILLISECONDS = 5000;
+
    //Map conversions
    final public static double PIXELS_PER_FOOT = 5.7;
    final public static double FEET_PER_METER = 0.3048;
@@ -42,6 +44,10 @@ public class Constants
    //Training Data Points
    final public static int DEFAULT_TRAINING_DATA_POINT_SIZE = 16;
    final public static int DEFAULT_TRAINING_DATA_POINT_MIDPOINT = 8;
+
+   //Truth Data Points
+   final public static int DEFAULT_TRUTH_DATA_POINT_SIZE = 8;
+   final public static int DEFAULT_TRUTH_DATA_POINT_MIDPOINT = 4;
 
    //Router (Access Point) Points
    final public static int DEFAULT_ROUTER_POINT_X_OFFSET = 21;

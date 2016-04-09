@@ -15,8 +15,11 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Map;
 import java.util.WeakHashMap;
 import javax.imageio.ImageIO;
@@ -37,7 +40,7 @@ import javax.swing.plaf.LayerUI;
  */
 public class MapDisplayPanel
         extends LayerUI<JLabel>
-        implements NewWifiDataListener
+        implements NewWifiDataListener, NewTruthPathDataListener, ExportAlgorithmEstimatePointsListener
 {
    private final Map<NewWifiDataListener.WifiDataType, ArrayList<Point>> mMapPointsOfInterestList;
    private final ArrayList<Point> mRouterPointList;
@@ -50,6 +53,7 @@ public class MapDisplayPanel
     * The training data point list
     */
    private final ArrayList<Point> mTrainingDataPointList;
+   private ArrayList<Point> mRecordedTruthPathPointList;
    public boolean mStartPointChosen = false;
    /**
     * The default spot for the calibration starting point
@@ -69,6 +73,8 @@ public class MapDisplayPanel
     * when controlled by DVR this is the threshold limiter
     */
    int mNumberOfPointsToDisplay = 0;
+   private boolean mStartPathRecord = false;
+   private ArrayList<Point> mTruthPathDataPointList;
 
    /**
     * Main constructor for creating the Map Display Panel
@@ -83,8 +89,10 @@ public class MapDisplayPanel
    {
       mMapPointsOfInterestList = new WeakHashMap<>();
       mRouterImageList = new ArrayList<>();
-      mRouterPointList = routerPointList;
+      mRecordedTruthPathPointList = new ArrayList<>();
       mTrainingDataPointList = trainingDataPointList;
+      mRouterPointList = routerPointList;
+      mTruthPathDataPointList = new ArrayList<>();
       mRouterImageBoundedRectangleList = new ArrayList<>();
 
       try
@@ -97,6 +105,7 @@ public class MapDisplayPanel
       catch (IOException e)
       {
       }//catch
+      //this.addMouseMotionListener(this);
    }//MapDisplayPanel
 
    /**
@@ -110,7 +119,8 @@ public class MapDisplayPanel
       System.out.println("install");
       super.installUI(inputLayer);
       JLayer layer = (JLayer) inputLayer;
-      layer.setLayerEventMask(AWTEvent.MOUSE_EVENT_MASK);
+      layer.setLayerEventMask(AWTEvent.MOUSE_EVENT_MASK | AWTEvent.MOUSE_MOTION_EVENT_MASK);
+      //layer.setLayerEventMask();
    }//installUI
 
    /**
@@ -138,6 +148,64 @@ public class MapDisplayPanel
       return this.mCalibrationStartPoint;
    }//getCalibrationStartingPoint
 
+   private void saveRecordedTruthPath()
+   {
+      try
+      {
+         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+         FileWriter writer = new FileWriter("RecordedTruthPath" + sdf.format(new Date()) + ".csv");
+
+         writer.append("X");
+         writer.append(',');
+         writer.append("Y");
+         writer.append('\n');
+
+         for (Point truth_point : this.mRecordedTruthPathPointList)
+         {
+            writer.append(Integer.toString(truth_point.x));
+            writer.append(',');
+            writer.append(Integer.toString(truth_point.y));
+            writer.append('\n');
+         }//for
+
+         writer.flush();
+         writer.close();
+      }
+      catch (IOException e)
+      {
+         e.printStackTrace();
+      }
+   }//saveRecordedTruthPath
+
+   private void exportAlgorithmEstimatePointData(WifiDataType dataType, ArrayList<Point> pointList)
+   {
+      try
+      {
+         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+         FileWriter writer = new FileWriter("Algorithm_Estimate_" + dataType.name() + sdf.format(new Date()) + ".csv");
+
+         writer.append("X");
+         writer.append(',');
+         writer.append("Y");
+         writer.append('\n');
+
+         for (Point point_estimate : pointList)
+         {
+            writer.append(Integer.toString(point_estimate.x));
+            writer.append(',');
+            writer.append(Integer.toString(point_estimate.y));
+            writer.append('\n');
+         }//for
+
+         writer.flush();
+         writer.close();
+      }
+      catch (IOException e)
+      {
+         e.printStackTrace();
+      }
+   }//saveRecordedTruthPath
+
    /**
     * Event fired when mouse event occur ontop of the glass layer
     *
@@ -156,10 +224,27 @@ public class MapDisplayPanel
          if (dialog_choice_result == JOptionPane.YES_OPTION)
          {
             mCalibrationStartPoint = mouse_point;
+            mStartPointChosen = true;
          }//if
          layer.repaint();
 
       }//if
+      if (mouseEvent.getID() == MouseEvent.MOUSE_CLICKED && SwingUtilities.isRightMouseButton(mouseEvent) && mouseEvent.getClickCount() == 2)
+      {
+         if (mStartPathRecord)
+         {
+            mStartPathRecord = false;
+            saveRecordedTruthPath();
+            JOptionPane.showMessageDialog(null, "Ending path record.");
+         }
+         else
+         {
+            mStartPathRecord = true;
+            mRecordedTruthPathPointList.clear();
+            JOptionPane.showMessageDialog(null, "Starting path record.");
+         }
+      }//if
+
       if (SwingUtilities.isLeftMouseButton(mouseEvent))
       {
          Point test_point = mouseEvent.getPoint();
@@ -173,6 +258,18 @@ public class MapDisplayPanel
          }//for
       }//if
    }//processMouseEvent
+
+   @Override
+   protected void processMouseMotionEvent(MouseEvent mouseEvent, JLayer<? extends JLabel> layer)
+   {
+      if (mouseEvent.getID() == MouseEvent.MOUSE_DRAGGED && SwingUtilities.isRightMouseButton(mouseEvent) && mStartPathRecord)
+      {
+         Point mouse_point = mouseEvent.getPoint();
+         mouse_point = SwingUtilities.convertPoint(mouseEvent.getComponent(), mouse_point, layer);
+         this.mRecordedTruthPathPointList.add(mouse_point);
+         //System.out.println("New point to record: " + mouse_point.toString());
+      }//if
+   }//processMouseMotionEvent
 
    /**
     * Returns the member variable with the stored Router coordinate list
@@ -278,9 +375,11 @@ public class MapDisplayPanel
          }//if
       }//for
 
+      paintTruthPathData(graphics_2d_utility, inputMapLayerComponent);
       paintTrainingData(graphics_2d_utility, inputMapLayerComponent);
       paintRouters(graphics_2d_utility, inputMapLayerComponent);
       paintCalibrationStartingPoint(graphics_2d_utility, inputMapLayerComponent);
+      inputMapLayerComponent.repaint();
 
       graphics_2d_utility.dispose();
    }//paint
@@ -314,6 +413,28 @@ public class MapDisplayPanel
                                         p.y - Constants.DEFAULT_ROUTER_POINT_Y_OFFSET,
                                         mainComponent);
             ++image_number;
+         }//for
+      }//if
+   }//paintRouters
+
+   /**
+    * When a drawing event occurs, this occurs to ensure that
+    * the routers are drawn appropriately on the map
+    *
+    * @param graphics2DUtility the 2D graphics drawing utility
+    * @param mainComponent     the main component container
+    */
+   public void paintTruthPathData(Graphics2D graphics2DUtility, JComponent mainComponent)
+   {
+      if (mTruthPathDataPointList != null && mTruthPathDataPointList.size() > 0)
+      {
+         graphics2DUtility.setColor(Color.BLACK);
+         boolean paint_point = false;
+         for (Point truth_point : mTruthPathDataPointList)
+         {
+            graphics2DUtility.fillOval(truth_point.x - Constants.DEFAULT_TRUTH_DATA_POINT_MIDPOINT,
+                                       truth_point.y - Constants.DEFAULT_TRUTH_DATA_POINT_MIDPOINT,
+                                       Constants.DEFAULT_TRUTH_DATA_POINT_SIZE, Constants.DEFAULT_TRUTH_DATA_POINT_SIZE);
          }//for
       }//if
    }//paintRouters
@@ -412,4 +533,38 @@ public class MapDisplayPanel
       }//if
       return total_points_available;
    }//displayLastNPoints
+
+   @Override
+   public void newTruthPath(ArrayList<Point> newTruthPath)
+   {
+      this.mTruthPathDataPointList = newTruthPath;
+   }
+
+   @Override
+   public void exportAlgorithmEstimatePoints(WifiDataType dataType)
+   {
+      ArrayList<Point> points_to_draw = new ArrayList<>();
+      //Choose the color based on the algorithm
+      switch (dataType)
+      {
+         case FINGERPRINTING:
+            points_to_draw = this.mMapPointsOfInterestList.get(dataType);
+            break;
+         case WEIGHTED_CENTROID:
+            points_to_draw = this.mMapPointsOfInterestList.get(dataType);
+            break;
+         case TRILATERATION:
+            points_to_draw = this.mMapPointsOfInterestList.get(dataType);
+            break;
+         case TRIANGULATION:
+            points_to_draw = this.mMapPointsOfInterestList.get(dataType);
+            break;
+         case PATTERN_MATCHING:
+            points_to_draw = this.mMapPointsOfInterestList.get(dataType);
+            break;
+         default:
+            points_to_draw = this.mMapPointsOfInterestList.get(dataType);
+            break;
+      }//switch
+   }
 }//MapDisplayPanel
